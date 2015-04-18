@@ -48,7 +48,10 @@ namespace CalDav.Client {
 				throw new Exception("Unable to create calendar");
 		}
 
-		public Calendar[] GetCalendars() {
+        /* Should look like:
+         * 
+         */
+        public Calendar[] GetCalendars() {
 			var xcollectionset = CalDav.Common.xCalDav.GetName("calendar-collection-set");
 			var result = Common.Request(Url, "propfind", new XDocument(
 					new XElement(CalDav.Common.xDav.GetName("propfind"),

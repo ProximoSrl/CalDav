@@ -1,0 +1,11 @@
+<?xml version=\"1.0\" encoding=\"UTF-8\"?><a:multistatus xmlns:a=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\" xmlns:d=\"urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/\" xmlns:b=\"xml:\">
+  <a:response>
+    <a:href>/calendars/kerio.sync.today/spravce/Calendar/</a:href>
+    <a:propstat>
+      <a:status>HTTP/1.1 403 Forbidden</a:status>
+      <a:prop>
+        <c:calendar-collection-set/>
+      </a:prop>
+    </a:propstat>
+  </a:response>
+</a:multistatus>
