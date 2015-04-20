@@ -67,8 +67,8 @@ namespace CalDav.Client {
 				};
 
 			var xdoc = XDocument.Parse(result.Item2);
-			//var hrefs = xdoc.Descendants(xcollectionset).SelectMany(x => x.Descendants(CalDav.Common.xDav.GetName("href")));
-            var hrefs = xdoc.Elements().SelectMany(x => x.Name == CalDav.Common.xDav.GetName("href") );
+            var hrefs = xdoc.Descendants(CalDav.Common.xDav.GetName("href"));
+            //var hrefs = xdoc.Elements().SelectMany();
 			return hrefs.Select(x => new Calendar { Url = new Uri(Url, x.Value), Credentials = Credentials }).ToArray();
 		}
 
