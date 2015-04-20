@@ -25,3 +25,4 @@ function create-package($name){
 
 create-package CalDav
 create-package CalDav.Server
+create-package CalDav.Client
