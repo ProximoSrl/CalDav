@@ -64,7 +64,23 @@ namespace CalDav.Client {
 			GetObject(e.UID);
 		}
 
-		public CalendarCollection GetAll() {
+        public void Delete(Event e)
+        {
+            if (string.IsNullOrEmpty(e.UID)) throw new ArgumentNullException("UID");
+
+            var result = Common.Request(new Uri(Url, e.UID + ".ics"), "DELETE", (req, str) =>
+            {
+                req.Headers[System.Net.HttpRequestHeader.IfNoneMatch] = "*";
+                req.ContentType = "text/calendar";
+                var calendar = new CalDav.Calendar();
+                e.Sequence = (e.Sequence ?? 0) + 1;
+                Common.Serialize(str, calendar);
+
+            }, Credentials);
+        }
+        
+        public CalendarCollection GetAll()
+        {
 			var result = Common.Request(Url, "PROPFIND", CalDav.Common.xCalDav.Element("calendar-multiget",
 			CalDav.Common.xDav.Element("prop",
 				CalDav.Common.xDav.Element("getetag"),
