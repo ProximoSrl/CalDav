@@ -15,6 +15,8 @@ namespace CalDav {
 			Attachments = new List<Uri>();
 		}
 
+        public virtual DateTime DtStamp { get { return DTSTAMP;  } }
+
 		public virtual Calendar Calendar { get; set; }
 		public virtual ICollection<Contact> Attendees { get; set; }
 		public virtual ICollection<Alarm> Alarms { get; set; }
