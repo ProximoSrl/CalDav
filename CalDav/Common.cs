@@ -13,8 +13,8 @@ namespace CalDav {
 		public static readonly XNamespace xCalDav = XNamespace.Get("urn:ietf:params:xml:ns:caldav");
 		public static readonly XNamespace xApple = XNamespace.Get("http://apple.com/ns/ical/");
 		public static readonly XNamespace xCardDav = XNamespace.Get("urn:ietf:params:xml:ns:carddav");
-
-		internal static void BeginBlock(this System.IO.TextWriter wrtr, string name) {
+        public static readonly XNamespace xCardCs = XNamespace.Get("http://calendarserver.org/ns/");
+        internal static void BeginBlock(this System.IO.TextWriter wrtr, string name) {
 			wrtr.WriteLine("BEGIN:" + name.ToUpper());
 		}
 		internal static void EndBlock(this System.IO.TextWriter wrtr, string name) {
@@ -244,7 +244,8 @@ namespace CalDav {
 		}
 
 		public static XElement Element(this XNamespace ns, string name, params object[] inner) {
-			return new XElement(ns.GetName(name), inner);
+            //return new XElement(ns.GetName(name), inner);
+            return new XElement(ns + name, inner);
 		}
 
 		public static XElement Element(this XName name, params object[] inner) {

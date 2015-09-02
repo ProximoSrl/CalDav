@@ -17,7 +17,7 @@ namespace Demo.WPF {
 		CalDav.Client.Calendar _Calendar;
 
 		void MainWindow_Loaded(object sender, RoutedEventArgs e) {
-			_Server = new CalDav.Client.Server("https://www.google.com/calendar/dav/andy.edinborough@gmail.com/events/", "andy.edinborough@gmail.com", "Gboey6Emo!");
+			_Server = new CalDav.Client.Server("http://colinlaney:12000/caldav/calendar/alk");
 			_Calendar = _Server.GetCalendars().FirstOrDefault();
 
 			this.AsyncUI(_Calendar.Initialize, () => lblCalendarName.Content = _Calendar.Name);

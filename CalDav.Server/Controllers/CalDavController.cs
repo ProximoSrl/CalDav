@@ -158,9 +158,18 @@ namespace CalDav.Server.Controllers {
 			var calendar = repo.GetCalendarByID(id);
 
 			var xdoc = GetRequestXml();
-			var props = xdoc.Descendants(CalDav.Common.xDav.GetName("prop")).FirstOrDefault().Elements();
+            IEnumerable<XElement> props;
+            var propNode = xdoc.Descendants(CalDav.Common.xDav.GetName("prop")).FirstOrDefault();
+            if (propNode == null)
+            {
+                props = new XElement[0];
+            }
+            else
+            {
+                props = propNode.Elements();
+            }
 
-			var allprop = props.Elements(Common.xDav.GetName("allprops")).Any();
+			var allprop = xdoc.Descendants(Common.xDav.GetName("allprop")).Any();
 			var hrefName = Common.xDav.GetName("href");
 			//var scheduleInboxURLName = Common.xCalDav.GetName("schedule-inbox-URL");
 			//var scheduleOutoxURLName = Common.xCalDav.GetName("schedule-outbox-URL");
@@ -215,10 +224,10 @@ namespace CalDav.Server.Controllers {
 
 			var supportedComponentsName = Common.xCalDav.GetName("supported-calendar-component-set");
 			var supportedComponents = !allprop && !props.Any(x => x.Name == supportedComponentsName) ? null :
-				new[]{
+                supportedComponentsName.Element(new[]{
 					Common.xCalDav.Element("comp", new XAttribute("name", "VEVENT")),
 					Common.xCalDav.Element("comp", new XAttribute("name", "VTODO"))
-				};
+				});
 
 			var getContentTypeName = Common.xDav.GetName("getcontenttype");
 			var getContentType = !allprop && !props.Any(x => x.Name == getContentTypeName) ? null :
@@ -239,8 +248,11 @@ namespace CalDav.Server.Controllers {
 
 			return new Result {
 				Status = (System.Net.HttpStatusCode)207,
-				Content = Common.xDav.Element("multistatus",
-					Common.xDav.Element("response",
+				Content = new XElement(Common.xDav + "multistatus",
+                        new XAttribute(XNamespace.Xmlns + "d", Common.xDav),
+                        new XAttribute(XNamespace.Xmlns + "c", Common.xCalDav),
+                        new XAttribute(XNamespace.Xmlns + "cs", Common.xCardCs),
+                    Common.xDav.Element("response",
 					Common.xDav.Element("href", Request.RawUrl),
 					Common.xDav.Element("propstat",
 								Common.xDav.Element("status", "HTTP/1.1 200 OK"),
@@ -326,7 +338,7 @@ namespace CalDav.Server.Controllers {
 			var repo = GetService<ICalendarRepository>();
 			var calendar = repo.GetCalendarByID(id);
 
-			var request = xdoc.Root.Elements().FirstOrDefault();
+			var request = xdoc.Root;
 			var filterElm = request.Element(CalDav.Common.xCalDav.GetName("filter"));
 			var filter = filterElm == null ? null : new Filter(filterElm);
 			var hrefName = CalDav.Common.xDav.GetName("href");

@@ -57,8 +57,7 @@ namespace CalDav.MVC.Models {
 			id = MakePathSafe(id);
 			var filename = System.IO.Path.Combine(_Directory, id + "\\_.ical");
 			if (!System.IO.File.Exists(filename)) {
-				if (id == "me") return CreateCalendar("me");
-				return null;
+				return CreateCalendar(id);
 			}
 
 			var calendar = new CalendarInfo();
@@ -94,8 +93,8 @@ namespace CalDav.MVC.Models {
 		}
 
 		public IQueryable<ICalendarObject> GetObjectsByFilter(ICalendarInfo calendar, Filter filter) {
-			throw new NotImplementedException();
-		}
+            return GetObjects(calendar);
+        }
 
 		public IQueryable<ICalendarObject> GetObjects(ICalendarInfo calendar) {
 			if (calendar == null) return new ICalendarObject[0].AsQueryable();
