@@ -7,7 +7,7 @@ namespace CalDav.MVC.Models {
 	public class CalendarRepository : ICalendarRepository {
 		private string _Directory;
 
-		public CalendarRepository(IPrincipal user) {
+		public CalendarRepository() {
 			_Directory = System.IO.Path.Combine(System.Web.HttpRuntime.AppDomainAppPath, "App_Data\\Calendars");
 			System.IO.Directory.CreateDirectory(_Directory);
 		}

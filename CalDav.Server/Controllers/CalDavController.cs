@@ -12,9 +12,15 @@ using System.Xml.Linq;
 
 namespace CalDav.Server.Controllers {
 	public class CalDavController : Controller {
+
+        public CalDavController()
+        {
+
+        }
 		public static void RegisterRoutes(System.Web.Routing.RouteCollection routes, string routePrefix = "caldav", bool disallowMakeCalendar = false, bool requireAuthentication = false, string basicAuthenticationRealm = null) {
 			RegisterRoutes<CalDavController>(routes, routePrefix, disallowMakeCalendar, requireAuthentication, basicAuthenticationRealm);
 		}
+
 		public static void RegisterRoutes<T>(System.Web.Routing.RouteCollection routes, string routePrefix = "caldav", bool disallowMakeCalendar = false, bool requireAuthentication = false, string basicAuthenticationRealm = null)
 			where T : CalDavController {
 			var caldavControllerType = typeof(T);
