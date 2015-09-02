@@ -237,8 +237,8 @@ namespace CalDav.Server.Controllers {
 				resourceTypeName, ownerName, supportedComponentsName, getContentTypeName,
 				displayNameName, calendarDescriptionName, calendarColorName,
 				currentUserPrincipalName, calendarHomeSetName, calendarUserAddressSetName,
-				supportedComponentsName
-			};
+				supportedComponentsName,supportedReportSetName
+            };
 			var prop404 = Common.xDav.Element("prop", props
 						.Where(p => !supportedProperties.Contains(p.Name))
 						.Select(p => new XElement(p.Name))
