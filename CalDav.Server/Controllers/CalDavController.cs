@@ -1,7 +1,9 @@
 ﻿using CalDav.Server.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.Mvc;
 using System.Web.Routing;
@@ -351,7 +353,7 @@ namespace CalDav.Server.Controllers
                      ),
 
                      (depth == 0 ? null :
-                         (repo.GetObjects(calendar)
+                         (repo.GetObjects(calendar.ID)
                          .Where(x => x != null)
                          .ToArray()
                             .Select(item => Common.xDav.Element("response",
@@ -412,11 +414,25 @@ namespace CalDav.Server.Controllers
         public virtual ActionResult Get(string id, string uid)
         {
             var repo = GetService<ICalendarRepository>();
-            var calendar = repo.GetCalendarByID(id);
-            var obj = repo.GetObjectByUID(calendar, uid);
-
             Response.ContentType = "text/calendar";
-            Response.Write(ToString(obj));
+
+            if (uid != null)
+            {
+                var obj = repo.GetObjectByUID(id, uid);
+                Response.Write(ToString(obj));
+            }
+            else
+            {
+                //TODO: refactor to avoid this strange usage of stream.
+                var calendar = repo.GetCalendarByID(id);
+                StringBuilder sb = new StringBuilder();
+                using (TextWriter w = new StringWriter(sb))
+                    calendar.Serialize(w);
+
+                Response.Write(sb.ToString());
+            }
+         
+
             return null;
         }
 
@@ -426,7 +442,6 @@ namespace CalDav.Server.Controllers
             if (xdoc == null) return new Result();
 
             var repo = GetService<ICalendarRepository>();
-            var calendar = repo.GetCalendarByID(id);
 
             var request = xdoc.Root;
             var filterElm = request.Element(CalDav.Common.xCalDav.GetName("filter"));
@@ -442,9 +457,9 @@ namespace CalDav.Server.Controllers
             var displaynameName = Common.xDav.GetName("displayname");
 
             IQueryable<ICalendarObject> result = null;
-            if (filter != null) result = repo.GetObjectsByFilter(calendar, filter);
+            if (filter != null) result = repo.GetObjectsByFilter(id, filter);
             else if (hrefs.Any())
-                result = hrefs.Select(x => repo.GetObjectByUID(calendar, GetObjectUIDFromPath(x)))
+                result = hrefs.Select(x => repo.GetObjectByUID(id, GetObjectUIDFromPath(x)))
                     .Where(x => x != null)
                     .AsQueryable();
 
@@ -471,10 +486,11 @@ namespace CalDav.Server.Controllers
                 };
             }
 
+            var calendar = repo.GetCalendarByID(id);
             return new Result
             {
                 Headers = new Dictionary<string, string> {
-                    {"ETag" , calendar == null ? null : Common.FormatDate( calendar.LastModified ) }
+                    {"ETag" , id == null ? null : Common.FormatDate( calendar.LastModified ) }
                 }
             };
         }

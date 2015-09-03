@@ -12,9 +12,9 @@ namespace CalDav.Server.Models {
 		ICalendarInfo CreateCalendar(string id);
 		void Save(ICalendarInfo calendar, ICalendarObject e);
 
-		ICalendarObject GetObjectByUID(ICalendarInfo calendar, string uid);
-		IQueryable<ICalendarObject> GetObjectsByFilter(ICalendarInfo calendar, Filter filter);
-		IQueryable<ICalendarObject> GetObjects(ICalendarInfo calendar);
+		ICalendarObject GetObjectByUID(String calendarId, string uid);
+		IQueryable<ICalendarObject> GetObjectsByFilter(String calendarId, Filter filter);
+		IQueryable<ICalendarObject> GetObjects(String calendarId);
 
 		void DeleteObject(ICalendarInfo calendar, string uid);
 	}
