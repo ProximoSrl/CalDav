@@ -256,7 +256,7 @@ namespace CalDav.Server.Controllers
 
             var getetagName = Common.xDav.GetName("getetag");
             var getetag = !allprop && !props.Any(x => x.Name == getetagName) ? null :
-                getetagName.Element();
+                getetagName.Element(DateTime.Now.Ticks);
 
             var getctagName = Common.xCalCs.GetName("getctag");
             var getctag = !allprop && !props.Any(x => x.Name == getctagName) ? null :
@@ -306,13 +306,14 @@ namespace CalDav.Server.Controllers
                 , getContentTypeName
                 , displayNameName
                 , calendarDescriptionName
-                , calendarColorName
+                //, calendarColorName
                 , currentUserPrincipalName
                 , calendarHomeSetName
                 , calendarUserAddressSetName
                 , supportedComponentsName
                 , supportedReportSetName
                 , getctagName
+                , getetagName
             };
 
             var childSupportedProperties = new HashSet<XName> {
@@ -331,6 +332,7 @@ namespace CalDav.Server.Controllers
                 //, supportedReportSetName
                 //, getctagName
             };
+
             var prop404 = Common.xDav.Element("prop", props
                         .Where(p => !supportedProperties.Contains(p.Name))
                         .Select(p => new XElement(p.Name))
@@ -340,8 +342,12 @@ namespace CalDav.Server.Controllers
                         .Where(p => !childSupportedProperties.Contains(p.Name))
                         .Select(p => new XElement(p.Name))
                 );
+
             var propStat404 = Common.xDav.Element("propstat",
                 Common.xDav.Element("status", "HTTP/1.1 404 Not Found"), prop404);
+
+            var propStat404ForChilds = Common.xDav.Element("propstat",
+                Common.xDav.Element("status", "HTTP/1.1 404 Not Found"), prop404ForChilds);
 
             return new Result
             {
@@ -361,6 +367,7 @@ namespace CalDav.Server.Controllers
                                     , supportedComponents
                                     , getctag
                                     , displayName
+                                    , getetag
                                     , getContentType
                                     , calendarDescription
                                     , calendarHomeSet
@@ -385,9 +392,9 @@ namespace CalDav.Server.Controllers
                                         Common.xDav.Element("status", "HTTP/1.1 200 OK"),
                                         resourceType == null ? null : new XElement("prop", resourceTypeName.Element()),
                                         (getContentType == null ? null : getContentTypeName.Element("text/calendar; component=v" + item.GetType().Name.ToLower())),
-                                        getetag == null ? null : getetagName.Element("\"" + Common.FormatDate(item.LastModified) + "\"")
+                                        getetag == null ? null : Common.xDav.Element("prop", getetagName.Element("\"" + Common.FormatDate(item.LastModified) + "\""))
                                     )
-                                    ,Common.xDav.Element("propstat", Common.xDav.Element("status", "HTTP/1.1 404 Not Found"), prop404ForChilds)
+                                    , (prop404ForChilds.Elements().Any() ? propStat404ForChilds : null)
                                 ))
                             .ToArray()))
                  )
