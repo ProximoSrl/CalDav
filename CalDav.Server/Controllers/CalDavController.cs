@@ -312,10 +312,32 @@ namespace CalDav.Server.Controllers
                 , calendarUserAddressSetName
                 , supportedComponentsName
                 , supportedReportSetName
+                , getctagName
+            };
+
+            var childSupportedProperties = new HashSet<XName> {
+                resourceTypeName
+                , getetagName
+                //, ownerName
+                //, supportedComponentsName
+                , getContentTypeName
+                //, displayNameName
+                //, calendarDescriptionName
+                //, calendarColorName
+                //, currentUserPrincipalName
+                //, calendarHomeSetName
+                //, calendarUserAddressSetName
+                //, supportedComponentsName
+                //, supportedReportSetName
                 //, getctagName
             };
             var prop404 = Common.xDav.Element("prop", props
                         .Where(p => !supportedProperties.Contains(p.Name))
+                        .Select(p => new XElement(p.Name))
+                );
+
+            var prop404ForChilds = Common.xDav.Element("prop", props
+                        .Where(p => !childSupportedProperties.Contains(p.Name))
                         .Select(p => new XElement(p.Name))
                 );
             var propStat404 = Common.xDav.Element("propstat",
@@ -328,6 +350,7 @@ namespace CalDav.Server.Controllers
                         new XAttribute(XNamespace.Xmlns + "d", Common.xDav),
                         new XAttribute(XNamespace.Xmlns + "c", Common.xCalDav),
                         new XAttribute(XNamespace.Xmlns + "cs", Common.xCalCs),
+                        //new XAttribute(XNamespace.Xmlns + "ICAL", Common.xApple),
                     Common.xDav.Element("response",
                     Common.xDav.Element("href", Request.RawUrl),
                     Common.xDav.Element("propstat",
@@ -360,10 +383,11 @@ namespace CalDav.Server.Controllers
                                 hrefName.Element(GetCalendarObjectUrl(calendar.ID, item.UID)),
                                     Common.xDav.Element("propstat",
                                         Common.xDav.Element("status", "HTTP/1.1 200 OK"),
-                                        resourceType == null ? null : resourceTypeName.Element(),
+                                        resourceType == null ? null : new XElement("prop", resourceTypeName.Element()),
                                         (getContentType == null ? null : getContentTypeName.Element("text/calendar; component=v" + item.GetType().Name.ToLower())),
                                         getetag == null ? null : getetagName.Element("\"" + Common.FormatDate(item.LastModified) + "\"")
                                     )
+                                    ,Common.xDav.Element("propstat", Common.xDav.Element("status", "HTTP/1.1 404 Not Found"), prop404ForChilds)
                                 ))
                             .ToArray()))
                  )
