@@ -509,9 +509,12 @@ namespace CalDav.Server.Controllers
                 {
                     Status = (System.Net.HttpStatusCode)207,
                     Content = CalDav.Common.xDav.Element("multistatus",
+                        new XAttribute(XNamespace.Xmlns + "d", Common.xDav),
+                        new XAttribute(XNamespace.Xmlns + "c", Common.xCalDav),
+                        new XAttribute(XNamespace.Xmlns + "cs", Common.xCalCs),
                     result.Select(r =>
                      CalDav.Common.xDav.Element("response",
-                         CalDav.Common.xDav.Element("href", new Uri(Request.Url, r.UID + ".ics")),
+                         CalDav.Common.xDav.Element("href", Request.RawUrl + "/" + r.UID + ".ics"),
                          CalDav.Common.xDav.Element("propstat",
                              CalDav.Common.xDav.Element("status", "HTTP/1.1 200 OK"),
                              CalDav.Common.xDav.Element("prop",
