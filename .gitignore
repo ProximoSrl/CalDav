@@ -1,4 +1,5 @@
 ﻿
+*.pubxml
 packages/
 */bin/
 */obj/
