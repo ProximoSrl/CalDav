@@ -490,7 +490,16 @@ namespace CalDav.Server.Controllers
             IQueryable<ICalendarObject> result = null;
             if (filter != null) result = repo.GetObjectsByFilter(id, filter);
             else if (hrefs.Any())
-                result = hrefs.Select(x => repo.GetObjectByUID(id, GetObjectUIDFromPath(x)))
+                result = hrefs
+                    .SelectMany<String, ICalendarObject>(x => {
+                        var objectUid = GetObjectUIDFromPath(x);
+                        if (!String.IsNullOrEmpty(objectUid))
+                        {
+                            return new ICalendarObject[] { repo.GetObjectByUID(id, GetObjectUIDFromPath(x)) };
+                        }
+
+                        return repo.GetObjects(id);
+                    })
                     .Where(x => x != null)
                     .AsQueryable();
 
