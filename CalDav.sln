@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalDav.Server", "CalDav.Ser
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Demo.MVC", "Demo.MVC\Demo.MVC.csproj", "{9164611E-4CAF-4FE1-B707-397CC1D515C0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalDav.Host", "CalDav.Host\CalDav.Host.csproj", "{BBE0FECD-B671-4F4C-9F1B-5694102A9BAA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,10 @@ Global
 		{9164611E-4CAF-4FE1-B707-397CC1D515C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9164611E-4CAF-4FE1-B707-397CC1D515C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9164611E-4CAF-4FE1-B707-397CC1D515C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BBE0FECD-B671-4F4C-9F1B-5694102A9BAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBE0FECD-B671-4F4C-9F1B-5694102A9BAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBE0FECD-B671-4F4C-9F1B-5694102A9BAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBE0FECD-B671-4F4C-9F1B-5694102A9BAA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

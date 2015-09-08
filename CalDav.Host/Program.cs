@@ -8,6 +8,9 @@ using Topshelf;
 
 namespace CalDav.Host
 {
+    /// <summary>
+    /// 
+    /// </summary>
     class Program
     {
         private const string ServiceDescriptiveName = "Jarvis - CalDAV service";
@@ -15,6 +18,7 @@ namespace CalDav.Host
 
         static void Main(string[] args)
         {
+            Start();
         }
 
         private static TopshelfExitCode Start()
@@ -47,7 +51,7 @@ namespace CalDav.Host
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine("===================================================================");
-            Console.WriteLine("DMS service - Proximo srl");
+            Console.WriteLine("CalDAV service - Proximo srl");
             Console.WriteLine("===================================================================");
             Console.WriteLine("  install                   -> Installa il servizio");
             Console.WriteLine("  uninstall                 -> Rimuove il servizio");
@@ -55,6 +59,10 @@ namespace CalDav.Host
             Console.WriteLine("  net stop Intranet         -> Arresta il servizio");
             Console.WriteLine("===================================================================");
             Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("===================================================================");
+            Console.WriteLine("TODO: Convertire controller MVC a WebApi!!!!");
+            Console.WriteLine("===================================================================");
             Console.WriteLine();
         }
 
