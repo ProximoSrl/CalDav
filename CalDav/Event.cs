@@ -25,7 +25,7 @@ namespace CalDav {
 		public virtual Classes? Class { get; set; }
 		public virtual DateTime? Created { get; set; }
 		public virtual string Description { get; set; }
-		public virtual bool IsAllDay { get; set; }
+
 		public virtual DateTime? LastModified { get; set; }
 		public virtual DateTime? Start { get; set; }
 		public virtual DateTime? End { get; set; }
@@ -100,13 +100,24 @@ namespace CalDav {
 				}
 			}
 
-			IsAllDay = Start == End;
 		}
+
+        private Boolean IsAllDayEvent
+        {
+            get
+            {
+                if (!Start.HasValue || !End.HasValue) return false;
+
+                return Start.Value.TimeOfDay == TimeSpan.Zero &&
+                       End.Value.TimeOfDay == TimeSpan.Zero;
+            }
+        }
 
 		public void Serialize(System.IO.TextWriter wrtr) {
 			if (End != null && Start != null && End < Start)
 				End = Start;
 
+            
 			wrtr.BeginBlock("VEVENT");
 			wrtr.Property("UID", UID);
 			if (Attendees != null)
@@ -117,9 +128,18 @@ namespace CalDav {
 			wrtr.Property("CLASS", Class);
 			wrtr.Property("CREATED", Created);
 			wrtr.Property("DESCRIPTION", Description);
-			wrtr.Property("DTEND", IsAllDay ? (End ?? Start.Value).Date : End);
-			wrtr.Property("DTSTAMP", DTSTAMP);
-			wrtr.Property("DTSTART", IsAllDay ? (Start ?? End.Value).Date : Start);
+            if (!IsAllDayEvent)
+            {
+                wrtr.Property("DTSTART", Start);
+                wrtr.Property("DTEND", End);
+            }
+            else
+            {
+                wrtr.Property("DTSTART", Start.Value.ToString("yyyyMMdd"));
+                wrtr.Property("DTEND", End.Value.ToString("yyyyMMdd"));
+            }
+
+            wrtr.Property("DTSTAMP", DTSTAMP);
 			wrtr.Property("LAST-MODIFIED", LastModified);
 			wrtr.Property("LOCATION", Location);
 			wrtr.Property("ORGANIZER", Organizer);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -51,18 +52,19 @@ namespace CalDav {
 				return null;
 			DateTime ret;
 			var match = rxDate.Match(value);
-			if (match.Success)
-				return new DateTime(
-					match.Groups[1].Value.ToInt() ?? 0,
-					match.Groups[2].Value.ToInt() ?? 0,
-					match.Groups[3].Value.ToInt() ?? 0,
-					match.Groups[4].Value.ToInt() ?? 0,
-					match.Groups[5].Value.ToInt() ?? 0,
-					match.Groups[6].Value.ToInt() ?? 0,
-				 match.Groups[match.Groups.Count - 1].Value.Is("Z") ? DateTimeKind.Utc : DateTimeKind.Unspecified);
-			else if (DateTime.TryParse(value, out ret))
-				return ret;
-
+            if (match.Success)
+                return new DateTime(
+                    match.Groups[1].Value.ToInt() ?? 0,
+                    match.Groups[2].Value.ToInt() ?? 0,
+                    match.Groups[3].Value.ToInt() ?? 0,
+                    match.Groups[4].Value.ToInt() ?? 0,
+                    match.Groups[5].Value.ToInt() ?? 0,
+                    match.Groups[6].Value.ToInt() ?? 0,
+                 match.Groups[match.Groups.Count - 1].Value.Is("Z") ? DateTimeKind.Utc : DateTimeKind.Unspecified);
+            else if (DateTime.TryParse(value, out ret))
+                return ret;
+            else if (DateTime.TryParseExact(value, "yyyyMMdd", null, DateTimeStyles.None, out ret))
+                return ret;
 			return (DateTime?)null;
 		}
 
