@@ -392,7 +392,7 @@ namespace CalDav.Server.Controllers
                                         Common.xDav.Element("status", "HTTP/1.1 200 OK"),
                                         resourceType == null ? null : new XElement("prop", resourceTypeName.Element()),
                                         (getContentType == null ? null : getContentTypeName.Element("text/calendar; component=v" + item.GetType().Name.ToLower())),
-                                        getetag == null ? null : Common.xDav.Element("prop", getetagName.Element("\"" + Common.FormatDate(item.LastModified) + "\""))
+                                        getetag == null ? null : Common.xDav.Element("prop", getetagName.Element(item.LastModified))
                                     )
                                     , (prop404ForChilds.Elements().Any() ? propStat404ForChilds : null)
                                 ))
@@ -514,7 +514,7 @@ namespace CalDav.Server.Controllers
                         new XAttribute(XNamespace.Xmlns + "cs", Common.xCalCs),
                     result.Select(r =>
                      CalDav.Common.xDav.Element("response",
-                         CalDav.Common.xDav.Element("href", Request.RawUrl + "/" + r.UID + ".ics"),
+                         CalDav.Common.xDav.Element("href", Request.RawUrl.TrimEnd('/') + "/" + r.UID + ".ics"),
                          CalDav.Common.xDav.Element("propstat",
                              CalDav.Common.xDav.Element("status", "HTTP/1.1 200 OK"),
                              CalDav.Common.xDav.Element("prop",
