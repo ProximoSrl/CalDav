@@ -102,7 +102,7 @@ namespace CalDav {
 
 		}
 
-        private Boolean IsAllDayEvent
+        public Boolean IsAllDayEvent
         {
             get
             {
