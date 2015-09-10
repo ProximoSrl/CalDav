@@ -15,6 +15,16 @@ namespace CalDav {
 			Attachments = new List<Uri>();
 		}
 
+        /// <summary>
+        /// if you build event with code and not with deserialization, it makes sense to 
+        /// allow manual setting of dtStamp.
+        /// </summary>
+        /// <param name="dtStamp"></param>
+        public void SetDtStamp(DateTime dtStamp)
+        {
+            DTSTAMP = dtStamp;
+        }
+
         public virtual DateTime DtStamp { get { return DTSTAMP;  } }
 
 		public virtual Calendar Calendar { get; set; }
