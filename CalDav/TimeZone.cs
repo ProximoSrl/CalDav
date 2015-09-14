@@ -17,9 +17,9 @@ namespace CalDav {
 			public Calendar Calendar { get; set; }
 
 			public void Deserialize(System.IO.TextReader rdr, Serializer serializer) {
-				string name, value;
+				string name, value, rigthPart;
 				var parameters = new System.Collections.Specialized.NameValueCollection();
-				while (rdr.Property(out name, out value, parameters) && !string.IsNullOrEmpty(name)) {
+				while (rdr.Property(out name, out value,out rigthPart, parameters) && !string.IsNullOrEmpty(name)) {
 					switch (name.ToUpper()) {
 						case "TZID": ID = value; break;
 						case "TZNAME": Name = value; break;
@@ -54,12 +54,27 @@ namespace CalDav {
 
 		public virtual Calendar Calendar { get; set; }
 
-		public void Deserialize(System.IO.TextReader rdr, Serializer serializer) {
-			string name, value;
+        public virtual String TzId { get; set; }
+
+        public virtual String TzUrl { get; set; }
+
+        public virtual String XLicLocation { get; set; }
+
+        public void Deserialize(System.IO.TextReader rdr, Serializer serializer) {
+            string name, value, rigthPart;
 			var parameters = new System.Collections.Specialized.NameValueCollection();
-			while (rdr.Property(out name, out value, parameters) && !string.IsNullOrEmpty(name)) {
+			while (rdr.Property(out name, out value, out rigthPart, parameters) && !string.IsNullOrEmpty(name)) {
 				switch (name) {
-					case "BEGIN":
+                    case "TZID":
+                        TzId = value;
+                        break;
+                    case "TZURL":
+                        TzUrl = rigthPart;
+                        break;
+                    case "X-LIC-LOCATION":
+                        XLicLocation = value;
+                        break;
+                    case "BEGIN":
 						var detail = serializer.GetService<TimeZoneDetail>();
 						detail.Type = value;
 						detail.Calendar = Calendar;

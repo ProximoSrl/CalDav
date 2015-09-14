@@ -5,9 +5,9 @@ namespace CalDav {
 		public CalendarCollection() { }
 		public CalendarCollection(IEnumerable<Calendar> calendars) : base(calendars) { }
 		public void Deserialize(System.IO.TextReader rdr, Serializer serializer) {
-			string name, value;
+			string name, value, rigthPart;
 			var parameters = new System.Collections.Specialized.NameValueCollection();
-			while (rdr.Property(out name, out value, parameters) && !string.IsNullOrEmpty(name)) {
+			while (rdr.Property(out name, out value, out rigthPart, parameters) && !string.IsNullOrEmpty(name)) {
 				switch (name.ToUpper()) {
 					case "BEGIN":
 						if (value == "VCALENDAR") {

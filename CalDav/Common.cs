@@ -167,10 +167,24 @@ namespace CalDav {
 			}
 		}
 
-		internal static bool Property(this System.IO.TextReader rdr, out string name, out string value, NameValueCollection parameters) {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="rdr"></param>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
+        /// <param name="rightPart">Is the complete right part of the element.</param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+		internal static bool Property(
+            this System.IO.TextReader rdr, 
+            out string name, 
+            out string value, 
+            out string rightPart,
+            NameValueCollection parameters) {
 			var line = rdr.ReadLine();
 			var oline = line;
-			value = name = null;
+			value = name = rightPart = null;
 			if (line == null)
 				return false;
 			int peek;
@@ -196,7 +210,7 @@ namespace CalDav {
 
 				if (name == null) {
 					name = part;
-
+                    rightPart = line;
 				} else if (sep == ':') {
 					value = line;
 					return true;

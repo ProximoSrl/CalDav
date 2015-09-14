@@ -3,7 +3,10 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Shouldly;
 using System;
 using System.Collections.Specialized;
+using System.IO;
 using System.Net.Mail;
+using System.Text;
+using System.Linq;
 
 namespace Tests {
 	[TestClass]
@@ -19,9 +22,9 @@ namespace Tests {
 
 		private static Tuple<string, string, NameValueCollection> DeserializeProperty(string text) {
 			using (var rdr = new System.IO.StringReader(text)) {
-				string name, value;
+				string name, value, rigthPart;
 				var parameters = new System.Collections.Specialized.NameValueCollection();
-				rdr.Property(out name, out value, parameters);
+				rdr.Property(out name, out value, out rigthPart, parameters);
 				if (name == null) return null;
 				return Tuple.Create(name, value, parameters);
 			}
@@ -34,7 +37,18 @@ namespace Tests {
 			return t;
 		}
 
-		[TestMethod]
+        private static Calendar DeserializeCalendar(string serializedCalendar) 
+        {
+            var serializer = new Serializer();
+            using (Stream str = new MemoryStream(Encoding.UTF8.GetBytes(serializedCalendar)))
+            {
+                var ical = serializer.Deserialize<CalDav.Calendar>(str, System.Text.Encoding.UTF8) ;
+                return ical;
+            }
+        }
+
+
+        [TestMethod]
 		public void Contact() {
 			var text = "ORGANIZER;CN=JohnSmith;DIR=\"ldap" + "://host.com:6666/o=3DDC Associates,c=3DUS??(cn=3DJohn Smith)\":MAILTO" + ":jsmith@host1.com";
 			var contact = Deserialize<Contact>(text);
@@ -70,5 +84,26 @@ namespace Tests {
 			text2 = Serialize("TRIGGER", trigger);
 			text2.ShouldBe(text);
 		}
+
+
+        [TestMethod]
+        public void TimeZone_Deserialized_from_calendar()
+        {
+            var text = TestData.AndroidPut;
+            var calendar = DeserializeCalendar(text);
+            Assert.AreEqual(1, calendar.TimeZones.Count);
+            CalDav.TimeZone timeZone = calendar.TimeZones.First();
+            Assert.AreEqual("Europe/Rome", timeZone.TzId);
+            Assert.AreEqual("Europe/Rome", timeZone.XLicLocation);
+            Assert.AreEqual("http://tzurl.org/zoneinfo/Europe/Rome", timeZone.TzUrl);
+
+            StringBuilder sb = new StringBuilder();
+            using (var tw = new StringWriter(sb)) {
+                calendar.Serialize(tw);
+            }
+            Console.WriteLine(sb.ToString());
+        }
+
+
 	}
 }

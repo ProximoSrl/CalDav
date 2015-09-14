@@ -6,9 +6,9 @@ namespace CalDav {
 		public Trigger Trigger { get; set; }
 
 		public void Deserialize(System.IO.TextReader rdr, Serializer serializer) {
-			string name, value;
+			string name, value, rigthPart;
 			var parameters = new System.Collections.Specialized.NameValueCollection();
-			while (rdr.Property(out name, out value, parameters) && !string.IsNullOrEmpty(name)) {
+			while (rdr.Property(out name, out value, out rigthPart, parameters) && !string.IsNullOrEmpty(name)) {
 				switch (name) {
 					case "ACTION": Action = value; break;
 					case "DESCRIPTION": Description = value; break;

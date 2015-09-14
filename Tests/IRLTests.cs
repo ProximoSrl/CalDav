@@ -6,7 +6,8 @@ using System;
 namespace Tests {
 	[TestClass]
 	public class IRLTests {
-		[TestMethod]
+
+		//[TestMethod]
 		public void ParseFeed() {
 			var calendar = new CalDav.Calendar();
 			var serializer = new Serializer();
@@ -19,7 +20,7 @@ namespace Tests {
 			calendar.Events.Count.ShouldBeGreaterThan(0);
 		}
 
-		[TestMethod]
+		//[TestMethod]
 		public void ParseICal() {
 			//http://blogs.nologin.es/rickyepoderi/index.php?/archives/14-Introducing-CalDAV-Part-I.html
 			//http://blogs.nologin.es/rickyepoderi/index.php?/archives/15-Introducing-CalDAV-Part-II.html
