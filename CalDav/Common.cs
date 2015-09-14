@@ -232,6 +232,14 @@ namespace CalDav {
 			if (dateTime == null) return null;
 			return FormatDate(dateTime.Value);
 		}
+
+        public static string EtagFromDate(this DateTime? dateTime)
+        {
+            if (dateTime == null) return "\"\"";
+
+            return "\"" + dateTime.Value.Ticks + "\"";
+        }
+
 		public static string FormatDate(this DateTime dateTime) {
 			return dateTime.ToString("yyyyMMddTHHmmss") + (dateTime.Kind == DateTimeKind.Utc ? "Z" : "");
 		}
