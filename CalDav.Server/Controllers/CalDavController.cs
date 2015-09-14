@@ -490,11 +490,11 @@ namespace CalDav.Server.Controllers
             var ownerName = Common.xDav.GetName("owner");
             var displaynameName = Common.xDav.GetName("displayname");
 
-            IQueryable<ObjectData> result = null;
+            IQueryable<CalendarObjectData> result = null;
             if (filter != null) result = repo.GetObjectsByFilter(id, filter);
             else if (hrefs.Any())
                 result = hrefs
-                    .SelectMany<String, ObjectData>(x => {
+                    .SelectMany<String, CalendarObjectData>(x => {
                         var objectUid = GetObjectUIDFromPath(x);
                         if (!String.IsNullOrEmpty(objectUid))
                         {
@@ -589,7 +589,7 @@ namespace CalDav.Server.Controllers
             }
         }
 
-        private static string ToString(ObjectData obj)
+        private static string ToString(CalendarObjectData obj)
         {
             var calendar = new CalDav.Calendar();
             calendar.AddItem(obj.Object);
