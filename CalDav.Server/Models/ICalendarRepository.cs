@@ -10,12 +10,19 @@ namespace CalDav.Server.Models {
 		IQueryable<ICalendarInfo> GetCalendars();
 		ICalendarInfo GetCalendarByID(string id);
 		ICalendarInfo CreateCalendar(string id);
-		void Save(ICalendarInfo calendar, ICalendarObject e);
+		void Save(ICalendarInfo calendar, ICalendarObject e, IEnumerable<TimeZone> timeZones);
 
-		ICalendarObject GetObjectByUID(String calendarId, string uid);
-		IQueryable<ICalendarObject> GetObjectsByFilter(String calendarId, Filter filter);
-		IQueryable<ICalendarObject> GetObjects(String calendarId);
+        ObjectData GetObjectByUID(String calendarId, string uid);
+		IQueryable<ObjectData> GetObjectsByFilter(String calendarId, Filter filter);
+		IQueryable<ObjectData> GetObjects(String calendarId);
 
 		void DeleteObject(ICalendarInfo calendar, string uid);
 	}
+
+    public class ObjectData
+    {
+        public ICalendarObject Object { get; set; }
+
+        public IEnumerable<TimeZone> TimeZones { get; set; }
+    }
 }

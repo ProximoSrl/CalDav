@@ -387,12 +387,12 @@ namespace CalDav.Server.Controllers
                          .Where(x => x != null)
                          .ToArray()
                             .Select(item => Common.xDav.Element("response",
-                                hrefName.Element(GetCalendarObjectUrl(calendar.ID, item.UID)),
+                                hrefName.Element(GetCalendarObjectUrl(calendar.ID, item.Object.UID)),
                                     Common.xDav.Element("propstat",
                                         Common.xDav.Element("status", "HTTP/1.1 200 OK"),
                                         resourceType == null ? null : new XElement("prop", resourceTypeName.Element()),
                                         (getContentType == null ? null : getContentTypeName.Element("text/calendar; component=v" + item.GetType().Name.ToLower())),
-                                        getetag == null ? null : Common.xDav.Element("prop",  getetagName.Element(Common.EtagFromDate(item.LastModified)))
+                                        getetag == null ? null : Common.xDav.Element("prop",  getetagName.Element(Common.EtagFromDate(item.Object.LastModified)))
                                     )
                                     , (prop404ForChilds.Elements().Any() ? propStat404ForChilds : null)
                                 ))
@@ -430,7 +430,7 @@ namespace CalDav.Server.Controllers
             var input = GetRequestCalendar();
             var e = input.Items.FirstOrDefault();
             e.LastModified = DateTime.UtcNow;
-            repo.Save(calendar, e);
+            repo.Save(calendar, e, input.TimeZones);
 
             return new Result
             {
@@ -449,6 +449,7 @@ namespace CalDav.Server.Controllers
 
             if (uid != null)
             {
+                IEnumerable<TimeZone> timeZones;
                 var obj = repo.GetObjectByUID(id, uid);
                 Response.Write(ToString(obj));
             }
@@ -466,6 +467,8 @@ namespace CalDav.Server.Controllers
 
             return null;
         }
+
+      
 
         public virtual ActionResult Report(string id)
         {
@@ -487,15 +490,15 @@ namespace CalDav.Server.Controllers
             var ownerName = Common.xDav.GetName("owner");
             var displaynameName = Common.xDav.GetName("displayname");
 
-            IQueryable<ICalendarObject> result = null;
+            IQueryable<ObjectData> result = null;
             if (filter != null) result = repo.GetObjectsByFilter(id, filter);
             else if (hrefs.Any())
                 result = hrefs
-                    .SelectMany<String, ICalendarObject>(x => {
+                    .SelectMany<String, ObjectData>(x => {
                         var objectUid = GetObjectUIDFromPath(x);
                         if (!String.IsNullOrEmpty(objectUid))
                         {
-                            return new ICalendarObject[] { repo.GetObjectByUID(id, GetObjectUIDFromPath(x)) };
+                            return new[] { repo.GetObjectByUID(id, GetObjectUIDFromPath(x)) };
                         }
 
                         return repo.GetObjects(id);
@@ -514,11 +517,11 @@ namespace CalDav.Server.Controllers
                         new XAttribute(XNamespace.Xmlns + "cs", Common.xCalCs),
                     result.Select(r =>
                      CalDav.Common.xDav.Element("response",
-                         CalDav.Common.xDav.Element("href", Request.RawUrl.TrimEnd('/') + "/" + r.UID + ".ics"),
+                         CalDav.Common.xDav.Element("href", Request.RawUrl.TrimEnd('/') + "/" + r.Object.UID + ".ics"),
                          CalDav.Common.xDav.Element("propstat",
                              CalDav.Common.xDav.Element("status", "HTTP/1.1 200 OK"),
                              CalDav.Common.xDav.Element("prop",
-                                (getetag == null ? null : CalDav.Common.xDav.Element("getetag", Common.EtagFromDate(r.LastModified))),
+                                (getetag == null ? null : CalDav.Common.xDav.Element("getetag", Common.EtagFromDate(r.Object.LastModified))),
                                 (calendarData == null ? null : CalDav.Common.xCalDav.Element("calendar-data",
                                     ToString(r)
                                 ))
@@ -586,14 +589,31 @@ namespace CalDav.Server.Controllers
             }
         }
 
-        private static string ToString(ICalendarObject obj)
+        private static string ToString(ObjectData obj)
         {
             var calendar = new CalDav.Calendar();
-            calendar.AddItem(obj);
+            calendar.AddItem(obj.Object);
+            if (obj.TimeZones != null)
+            {
+                foreach (var tz in obj.TimeZones)
+                {
+                    calendar.TimeZones.Add(tz);
+                }
+            }
             var serializer = new Serializer();
             using (var str = new System.IO.StringWriter())
             {
                 serializer.Serialize(str, calendar);
+                return str.ToString();
+            }
+        }
+
+        private static string ToString(ICalendarInfo obj)
+        {
+            var serializer = new Serializer();
+            using (var str = new System.IO.StringWriter())
+            {
+                serializer.Serialize(str, obj);
                 return str.ToString();
             }
         }

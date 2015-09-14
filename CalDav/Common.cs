@@ -114,7 +114,11 @@ namespace CalDav {
 				.Replace("\\;", ";")
 				.Replace("\\,", ",");
 		}
-		internal static void Property(this System.IO.TextWriter wrtr, string name, string value, bool encoded = false, NameValueCollection parameters = null) {
+		internal static void Property(
+            this System.IO.TextWriter wrtr,
+            string name, 
+            string value, 
+            bool encoded = false, NameValueCollection parameters = null) {
 			if (value == null) return;
 			value = name.ToUpper() + FormatParameters(parameters) + ":" + (encoded ? value : PropertyEncode(value));
 			while (value.Length > 75) {
@@ -123,11 +127,11 @@ namespace CalDav {
 			}
 			if (value.Length > 0) wrtr.WriteLine(value);
 		}
-		internal static void Property(this System.IO.TextWriter wrtr, string name, DateTime? value) {
+		internal static void Property(this System.IO.TextWriter wrtr, string name, DateTime? value, NameValueCollection parameters = null ) {
 			if (value == null
 				|| value < System.Data.SqlTypes.SqlDateTime.MinValue.Value
 				|| value > System.Data.SqlTypes.SqlDateTime.MaxValue.Value) return;
-			wrtr.Property(name, FormatDate(value.Value));
+			wrtr.Property(name, FormatDate(value.Value), parameters : parameters);
 		}
 
 		internal static void Property(this System.IO.TextWriter wrtr, string name, Enum value) {
@@ -275,5 +279,7 @@ namespace CalDav {
 		public static XElement Element(this XName name, params object[] inner) {
 			return new XElement(name, inner);
 		}
+
+      
 	}
 }

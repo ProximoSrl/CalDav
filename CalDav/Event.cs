@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 
 namespace CalDav {
@@ -38,8 +39,12 @@ namespace CalDav {
 
 		public virtual DateTime? LastModified { get; set; }
 		public virtual DateTime? Start { get; set; }
-		public virtual DateTime? End { get; set; }
-		public virtual string Location { get; set; }
+
+        public virtual String StartTzid { get; set; }
+
+        public virtual DateTime? End { get; set; }
+        public virtual String EndTzid { get; set; }
+        public virtual string Location { get; set; }
 		public virtual int? Priority { get; set; }
 		public virtual Statuses? Status { get; set; }
 		public virtual int? Sequence { get; set; }
@@ -77,9 +82,15 @@ namespace CalDav {
 					case "CLASS": Class = value.ToEnum<Classes>(); break;
 					case "CREATED": Created = value.ToDateTime(); break;
 					case "DESCRIPTION": Description = value; break;
-					case "DTEND": End = value.ToDateTime(); break;
+					case "DTEND":
+                        End = value.ToDateTime();
+                        EndTzid = parameters["TZID"];
+                        break;
 					case "DTSTAMP": DTSTAMP = value.ToDateTime().GetValueOrDefault(); break;
-					case "DTSTART": Start = value.ToDateTime(); break;
+					case "DTSTART":
+                        Start = value.ToDateTime();
+                        StartTzid = parameters["TZID"];
+                        break;
 					case "LAST-MODIFIED": LastModified = value.ToDateTime(); break;
 					case "LOCATION": Location = value; break;
 					case "ORGANIZER":
@@ -138,15 +149,20 @@ namespace CalDav {
 			wrtr.Property("CLASS", Class);
 			wrtr.Property("CREATED", Created);
 			wrtr.Property("DESCRIPTION", Description);
+            NameValueCollection startParameter = new NameValueCollection();
+            NameValueCollection endParameter = new NameValueCollection();
+            if (!String.IsNullOrEmpty(StartTzid)) startParameter.Add("TZID", StartTzid);
+            if (!String.IsNullOrEmpty(EndTzid)) endParameter.Add("TZID", EndTzid);
+
             if (!IsAllDayEvent)
             {
-                wrtr.Property("DTSTART", Start);
-                wrtr.Property("DTEND", End);
+                wrtr.Property("DTSTART", Start, parameters : startParameter);
+                wrtr.Property("DTEND", End, parameters: endParameter);
             }
             else
             {
-                wrtr.Property("DTSTART", Start.Value.ToString("yyyyMMdd"));
-                wrtr.Property("DTEND", End.Value.ToString("yyyyMMdd"));
+                wrtr.Property("DTSTART", Start.Value.ToString("yyyyMMdd"), parameters: startParameter);
+                wrtr.Property("DTEND", End.Value.ToString("yyyyMMdd"), parameters: endParameter);
             }
 
             wrtr.Property("DTSTAMP", DTSTAMP);

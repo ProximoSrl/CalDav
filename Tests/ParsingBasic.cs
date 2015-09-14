@@ -104,6 +104,26 @@ namespace Tests {
             Console.WriteLine(sb.ToString());
         }
 
+        [TestMethod]
+        public void TimeZone_parse_start_and_end()
+        {
+            var text = TestData.AndroidPut;
+            var calendar = DeserializeCalendar(text);
+            Assert.AreEqual(1, calendar.TimeZones.Count);
+            CalDav.TimeZone timeZone = calendar.TimeZones.First();
+            var evt = (Event) calendar.Items.Single();
+            Assert.AreEqual(new DateTime(2015, 09, 16, 09, 30, 00), evt.Start);
+            Assert.AreEqual("Europe/Rome", evt.StartTzid);
+            Assert.AreEqual("Europe/Rome", evt.EndTzid);
+            StringBuilder sb = new StringBuilder();
+            using (var tw = new StringWriter(sb))
+            {
+                calendar.Serialize(tw);
+            }
+            Console.WriteLine(sb.ToString());
 
-	}
+            Assert.IsTrue(sb.ToString().Contains("DTSTART;TZID=Europe/Rome:20150916T093000"));
+            Assert.IsTrue(sb.ToString().Contains("DTEND;TZID=Europe/Rome:20150916T103000"));
+        }
+    }
 }

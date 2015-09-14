@@ -1,5 +1,6 @@
 ﻿using CalDav.Server.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Principal;
 
@@ -78,24 +79,39 @@ namespace CalDav.MVC.Models {
             }
         }
 
-        public ICalendarObject GetObjectByUID(String calendarId, string uid) {
+        public ObjectData GetObjectByUID(String calendarId, string uid) {
 			var filename = System.IO.Path.Combine(_Directory, calendarId, uid + ".ics");
-			if (!System.IO.File.Exists(filename)) return null;
+            var itemTimeZones = new List<TimeZone>();
+
+            if (!System.IO.File.Exists(filename)) return null;
 			var serializer = new Serializer();
 			using (var file = System.IO.File.OpenText(filename)) {
 				var ical = (serializer.Deserialize<CalendarCollection>(file))[0];
-				return ical.Events.OfType<ICalendarObject>()
-					.Union(ical.ToDos)
-					.Union(ical.FreeBusy)
-					.Union(ical.JournalEntries)
-					.FirstOrDefault();
+                foreach (var tz in ical.TimeZones)
+                {
+                    itemTimeZones.Add(tz);
+                }
+                return new ObjectData()
+                {
+                    Object = ical.Events.OfType<ICalendarObject>()
+                        .Union(ical.ToDos)
+                        .Union(ical.FreeBusy)
+                        .Union(ical.JournalEntries)
+                        .FirstOrDefault(),
+                    TimeZones = ical.TimeZones
+                };
 			}
 		}
 
-		public void Save(ICalendarInfo calendar, ICalendarObject e) {
+		public void Save(ICalendarInfo calendar, ICalendarObject e, IEnumerable<TimeZone> timeZones) {
 			var filename = System.IO.Path.Combine(_Directory, calendar.ID, e.UID + ".ics");
 			var ical = new CalDav.Calendar();
+           
 			ical.AddItem(e);
+            foreach (var timezone in timeZones)
+            {
+                ical.TimeZones.Add(timezone);
+            }
 			var serializer = new Serializer();
 			using (var file = System.IO.File.Open(filename, System.IO.FileMode.Create))
 				serializer.Serialize(file, ical);
@@ -112,22 +128,26 @@ namespace CalDav.MVC.Models {
                 serializer.Serialize(file, globalIcal);
         }
 
-		public IQueryable<ICalendarObject> GetObjectsByFilter(String calendarId, Filter filter) {
+		public IQueryable<ObjectData> GetObjectsByFilter(String calendarId, Filter filter) {
             return GetObjects(calendarId);
         }
 
-		public IQueryable<ICalendarObject> GetObjects(String calendarId) {
-			if (calendarId == null) return new ICalendarObject[0].AsQueryable();
+		public IQueryable<ObjectData> GetObjects(String calendarId) {
+			if (calendarId == null) return new ObjectData[0].AsQueryable();
 			var directory = System.IO.Path.Combine(_Directory, calendarId);
 			var files = System.IO.Directory.GetFiles(directory, "*.ics");
 			var serializer = new Serializer();
 			return files
 				.SelectMany(x => serializer.Deserialize<CalendarCollection>(x))
-				.SelectMany(x => x.Items)
+				.SelectMany(x => x.Items.Select(o => new ObjectData()
+                {
+                    Object = o,
+                    TimeZones = x.TimeZones
+                }))
 				.AsQueryable();
 		}
 
-		public ICalendarObject GetObjectByPath(string path) {
+		public ObjectData GetObjectByPath(string path) {
 			var uid = path.Split('/').Last().Split('.').FirstOrDefault();
 			return GetObjectByUID(path, uid);
 		}
@@ -136,7 +156,7 @@ namespace CalDav.MVC.Models {
 			var uid = path.Split('/').Last().Split('.').FirstOrDefault();
 			var obj = GetObjectByUID(calendar.ID, uid);
 			if (obj == null) return;
-			var filename = System.IO.Path.Combine(_Directory, calendar.ID, obj.UID + ".ics");
+			var filename = System.IO.Path.Combine(_Directory, calendar.ID, obj.Object.UID + ".ics");
 			if (!System.IO.File.Exists(filename))
 				return;
 			System.IO.File.Delete(filename);

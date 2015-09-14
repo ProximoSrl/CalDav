@@ -11,8 +11,8 @@ namespace CalDav {
 			public virtual string Name { get; set; }
 			public virtual string ID { get; set; }
 			public virtual DateTime? Start { get; set; }
-			public virtual TimeSpan? OffsetFrom { get; set; }
-			public virtual TimeSpan? OffsetTo { get; set; }
+			public virtual String OffsetFrom { get; set; }
+			public virtual String OffsetTo { get; set; }
 			public virtual ICollection<Recurrence> Recurrences { get; set; }
 			public Calendar Calendar { get; set; }
 
@@ -29,8 +29,8 @@ namespace CalDav {
 							rule.Deserialize(value, parameters);
 							Recurrences.Add(rule);
 							break;
-						case "TZOFFSETFROM": OffsetFrom = value.ToOffset(); break;
-						case "TZOFFSETTO": OffsetTo = value.ToOffset(); break;
+						case "TZOFFSETFROM": OffsetFrom = value; break;
+						case "TZOFFSETTO": OffsetTo = value; break;
 						case "END": return;
 					}
 				}
@@ -45,9 +45,9 @@ namespace CalDav {
 					foreach (var rule in Recurrences)
 						wrtr.Property("RRULE", rule);
 				if (OffsetFrom != null)
-					wrtr.Property("TZOFFSETFROM", OffsetFrom.Value.FormatOffset());
+					wrtr.Property("TZOFFSETFROM", OffsetFrom);
 				if (OffsetFrom != null)
-					wrtr.Property("TZOFFSETTO", OffsetTo.Value.FormatOffset());
+					wrtr.Property("TZOFFSETTO", OffsetTo);
 				wrtr.EndBlock(Type.ToUpper());
 			}
 		}
@@ -93,7 +93,11 @@ namespace CalDav {
 		public void Serialize(System.IO.TextWriter wrtr) {
 			if (Count == 0) return;
 			wrtr.BeginBlock("VTIMEZONE");
-			foreach (var detail in this) {
+            if (!String.IsNullOrEmpty(TzId)) wrtr.Property("TZID", TzId);
+            if (!String.IsNullOrEmpty(TzUrl)) wrtr.Property("TZURL", TzUrl);
+            if (!String.IsNullOrEmpty(XLicLocation)) wrtr.Property("X-LIC-LOCATION", XLicLocation);
+             
+            foreach (var detail in this) {
 				detail.Calendar = Calendar;
 				detail.Serialize(wrtr);
 			}
