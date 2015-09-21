@@ -79,7 +79,8 @@ namespace CalDav.MVC.Models {
             }
         }
 
-        public ObjectData GetObjectByUID(String calendarId, string uid) {
+        public CalendarObjectData GetObjectByUID(String calendarId, string uid)
+        {
 			var filename = System.IO.Path.Combine(_Directory, calendarId, uid + ".ics");
             var itemTimeZones = new List<TimeZone>();
 
@@ -91,7 +92,7 @@ namespace CalDav.MVC.Models {
                 {
                     itemTimeZones.Add(tz);
                 }
-                return new ObjectData()
+                return new CalendarObjectData()
                 {
                     Object = ical.Events.OfType<ICalendarObject>()
                         .Union(ical.ToDos)
@@ -128,18 +129,20 @@ namespace CalDav.MVC.Models {
                 serializer.Serialize(file, globalIcal);
         }
 
-		public IQueryable<ObjectData> GetObjectsByFilter(String calendarId, Filter filter) {
+        public IQueryable<CalendarObjectData> GetObjectsByFilter(String calendarId, Filter filter)
+        {
             return GetObjects(calendarId);
         }
 
-		public IQueryable<ObjectData> GetObjects(String calendarId) {
-			if (calendarId == null) return new ObjectData[0].AsQueryable();
+        public IQueryable<CalendarObjectData> GetObjects(String calendarId)
+        {
+            if (calendarId == null) return new CalendarObjectData[0].AsQueryable();
 			var directory = System.IO.Path.Combine(_Directory, calendarId);
 			var files = System.IO.Directory.GetFiles(directory, "*.ics");
 			var serializer = new Serializer();
 			return files
 				.SelectMany(x => serializer.Deserialize<CalendarCollection>(x))
-				.SelectMany(x => x.Items.Select(o => new ObjectData()
+                .SelectMany(x => x.Items.Select(o => new CalendarObjectData()
                 {
                     Object = o,
                     TimeZones = x.TimeZones
@@ -147,7 +150,8 @@ namespace CalDav.MVC.Models {
 				.AsQueryable();
 		}
 
-		public ObjectData GetObjectByPath(string path) {
+        public CalendarObjectData GetObjectByPath(string path)
+        {
 			var uid = path.Split('/').Last().Split('.').FirstOrDefault();
 			return GetObjectByUID(path, uid);
 		}
