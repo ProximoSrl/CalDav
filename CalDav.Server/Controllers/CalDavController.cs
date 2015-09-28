@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.Mvc;
@@ -94,28 +95,41 @@ namespace CalDav.Server.Controllers
         {
             if (RequireAuthentication && !User.Identity.IsAuthenticated)
             {
-                return new Result
-                {
-                    Status = System.Net.HttpStatusCode.Unauthorized,
-                    Headers = BasicAuthenticationRealm == null ? null : new Dictionary<string, string> {
-                            {"WWW-Authenticate", "Basic realm=\"" + Request.Url.Host + "\"" }
-                     }
-                };
+                return Unauthorized();
             }
 
-            switch (Request.HttpMethod)
+            try
             {
-                case "OPTIONS": return Options();
-                case "PROPFIND": return PropFind(id);
-                case "REPORT": return Report(id);
-                case "DELETE": return Delete(id, uid);
-                case "PUT": return Put(id, uid);
-                case "MKCALENDAR":
-                    if (DisallowMakeCalendar) return NotImplemented();
-                    return MakeCalendar(id);
-                case "GET": return Get(id, uid);
-                default: return NotImplemented();
+                switch (Request.HttpMethod)
+                {
+                    case "OPTIONS": return Options();
+                    case "PROPFIND": return PropFind(id);
+                    case "REPORT": return Report(id);
+                    case "DELETE": return Delete(id, uid);
+                    case "PUT": return Put(id, uid);
+                    case "MKCALENDAR":
+                        if (DisallowMakeCalendar) return NotImplemented();
+                        return MakeCalendar(id);
+                    case "GET": return Get(id, uid);
+                    default: return NotImplemented();
+                }
             }
+            catch (SecurityException)
+            {
+                return Unauthorized();
+            }
+           
+        }
+
+        private ActionResult Unauthorized()
+        {
+            return new Result
+            {
+                Status = System.Net.HttpStatusCode.Unauthorized,
+                Headers = BasicAuthenticationRealm == null ? null : new Dictionary<string, string> {
+                            {"WWW-Authenticate", "Basic realm=\"" + Request.Url.Host + "\"" }
+                     }
+            };
         }
 
         private static string BASE, CALENDAR_ROUTE, OBJECT_ROUTE, CALENDAR_OBJECT_ROUTE, USER_ROUTE;
