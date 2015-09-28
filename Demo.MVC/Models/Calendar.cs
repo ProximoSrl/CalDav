@@ -55,5 +55,17 @@ namespace CalDav.MVC.Models {
 			}
 		}
 
-	}
+        public string Color
+        {
+            get
+            {
+                return this["pr"];
+            }
+            set
+            {
+                this["ID"] = value;
+            }
+        }
+
+    }
 }

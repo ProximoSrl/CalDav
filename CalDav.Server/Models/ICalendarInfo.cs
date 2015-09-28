@@ -12,5 +12,8 @@ namespace CalDav.Server.Models
         string Name { get; }
         string Description { get; }
         DateTime LastModified { get; }
+
+        String Color { get; }
+
     }
 }

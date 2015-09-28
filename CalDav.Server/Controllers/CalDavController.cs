@@ -293,9 +293,11 @@ namespace CalDav.Server.Controllers
             var displayName = calendar == null || (!allprop && !props.Any(x => x.Name == displayNameName)) ? null :
                 displayNameName.Element(calendar.Name ?? calendar.ID);
 
+            var color = calendar.Color;
+            if (String.IsNullOrEmpty(color)) color = "#888888FF";
             var calendarColorName = Common.xApple.GetName("calendar-color");
             var calendarColor = !allprop && !props.Any(x => x.Name == calendarColorName) ? null :
-                calendarColorName.Element("FF5800");
+                calendarColorName.Element(color);
 
             var calendarDescriptionName = Common.xCalDav.GetName("calendar-description");
             var calendarDescription = calendar == null || (!allprop && !props.Any(x => x.Name == calendarDescriptionName)) ? null :
