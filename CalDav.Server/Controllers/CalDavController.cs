@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Web.Mvc;
 using System.Web.Routing;
 using System.Xml.Linq;
@@ -41,14 +42,19 @@ namespace CalDav.Server.Controllers
             MapFirst(routes, "CalDav Root", string.Empty, new { controller, action = "PropFind" }, namespaces, new { httpMethod = new Method("PROPFIND") });
             MapFirst(routes, "CalDav", BASE = routePrefix, defaults, namespaces);
             MapFirst(routes, "CalDav", BASE = routePrefix, defaults, namespaces);
-            MapFirst(routes, "CalDav User", USER_ROUTE = routePrefix + "/user/{id}/", defaults, namespaces);
+            MapFirst(
+                routes,
+                "CalDav User",
+                USER_ROUTE = routePrefix + "/user/{id}/",
+                new { controller, action = "userRoot" },
+                namespaces);
 
             MapFirst(routes, "CalDav Calendar", CALENDAR_ROUTE = routePrefix + "/calendar/{id}/", defaults, namespaces);
             //Added to support options called root of the caldav.
             MapFirst(
                 routes,
                 "CalDav Calendar options home",
-                CALENDAR_ROUTE = routePrefix + "/calendar/",
+                routePrefix + "/calendar/",
                 new { controller, action = "indexRoot" },
                 namespaces
             );
@@ -86,7 +92,28 @@ namespace CalDav.Server.Controllers
 
             switch (Request.HttpMethod)
             {
-                case "OPTIONS": return Options();
+                case "OPTIONS": return CalendarOptions();
+                default: return NotImplemented();
+            }
+        }
+
+        public virtual ActionResult UserRoot(string id, string uid)
+        {
+            if (RequireAuthentication && !User.Identity.IsAuthenticated)
+            {
+                return new Result
+                {
+                    Status = System.Net.HttpStatusCode.Unauthorized,
+                    Headers = BasicAuthenticationRealm == null ? null : new Dictionary<string, string> {
+                            {"WWW-Authenticate", "Basic realm=\"" + Request.Url.Host + "\"" }
+                     }
+                };
+            }
+
+            switch (Request.HttpMethod)
+            {
+                case "PROPFIND": return UserPropFind();
+                case "OPTIONS": return UserOption();
                 default: return NotImplemented();
             }
         }
@@ -102,7 +129,7 @@ namespace CalDav.Server.Controllers
             {
                 switch (Request.HttpMethod)
                 {
-                    case "OPTIONS": return Options();
+                    case "OPTIONS": return CalendarOptions();
                     case "PROPFIND": return PropFind(id);
                     case "REPORT": return Report(id);
                     case "DELETE": return Delete(id, uid);
@@ -111,14 +138,17 @@ namespace CalDav.Server.Controllers
                         if (DisallowMakeCalendar) return NotImplemented();
                         return MakeCalendar(id);
                     case "GET": return Get(id, uid);
-                    default: return NotImplemented();
+                    default:
+                        var xdoc = GetRequestXml();
+                        return NotImplemented();
+                        
                 }
             }
             catch (SecurityException)
             {
                 return Unauthorized();
             }
-           
+
         }
 
         private ActionResult Unauthorized()
@@ -138,13 +168,24 @@ namespace CalDav.Server.Controllers
         public static bool RequireAuthentication { get; set; }
         public static string BasicAuthenticationRealm { get; set; }
 
-        protected virtual string GetUserUrl(string id = null)
+        protected virtual string GetCurrentUserUrl()
         {
-            if (string.IsNullOrEmpty(id))
-                return GetCalendarUrl(null);
-            //id = User.Identity.Name;
-            if (string.IsNullOrEmpty(id)) id = "ANONYMOUS";
-            return "/" + USER_ROUTE.Replace("{id}", Uri.EscapeDataString(id)).Replace("{*path}", string.Empty);
+            //if (string.IsNullOrEmpty(id))
+            //    return GetCalendarUrl(null);
+            ////id = User.Identity.Name;
+            //if (string.IsNullOrEmpty(id)) id = "ANONYMOUS";
+            var userUrl = "/" + USER_ROUTE.Replace("{id}", Thread.CurrentPrincipal.Identity.Name);
+            return userUrl;
+        }
+
+        protected virtual string GetCurrentUserCalendar()
+        {
+            //if (string.IsNullOrEmpty(id))
+            //    return GetCalendarUrl(null);
+            ////id = User.Identity.Name;
+            //if (string.IsNullOrEmpty(id)) id = "ANONYMOUS";
+            var calendarUserUrl = "/" + CALENDAR_ROUTE.Replace("{id}", Thread.CurrentPrincipal.Identity.Name);
+            return calendarUserUrl;
         }
 
         protected virtual string GetUserEmail(string id = null)
@@ -168,32 +209,95 @@ namespace CalDav.Server.Controllers
             return rxObjectRoute.Match(path).Groups["uid"].Value;
         }
 
-        public virtual ActionResult Options()
+
+        public virtual ActionResult UserPropFind()
         {
             var xdoc = GetRequestXml();
-            if (xdoc != null)
+            IEnumerable<XElement> props;
+            var propNode = xdoc.Descendants(CalDav.Common.xDav.GetName("prop")).FirstOrDefault();
+            if (propNode == null)
             {
-                var request = xdoc.Root.Elements().FirstOrDefault();
-                switch (request.Name.LocalName.ToLower())
-                {
-                    case "calendar-collection-set":
-                        var repo = GetService<ICalendarRepository>();
-                        var calendars = repo.GetCalendars().ToArray();
-
-                        return new Result
-                        {
-                            Content = CalDav.Common.xDav.Element("options-response",
-                             CalDav.Common.xCalDav.Element("calendar-collection-set",
-                                 calendars.Select(calendar =>
-                                     CalDav.Common.xDav.Element("href",
-                                         new Uri(Request.Url, GetCalendarUrl(calendar.Name))
-                                         ))
-                             )
-                         )
-                        };
-                }
+                props = new XElement[0];
             }
+            else
+            {
+                props = propNode.Elements();
+            }
+            var hrefName = Common.xDav.GetName("href");
 
+            var calendarHomeSetName = Common.xCalDav.GetName("calendar-home-set");
+            var calendarHomeSet = !props.Any(x => x.Name == calendarHomeSetName) ? null :
+                calendarHomeSetName.Element(hrefName.Element(GetCurrentUserCalendar()));
+
+            var supportedProperties = new HashSet<XName> {
+                calendarHomeSetName
+            };
+
+            var prop404 = Common.xDav.Element("prop", props
+                      .Where(p => !supportedProperties.Contains(p.Name))
+                      .Select(p => new XElement(p.Name))
+              );
+
+            var propStat404 = Common.xDav.Element("propstat",
+             Common.xDav.Element("status", "HTTP/1.1 404 Not Found"), prop404);
+
+            var result = new Result
+            {
+                Status = (System.Net.HttpStatusCode)207,
+                Content = new XElement(Common.xDav + "multistatus",
+                       new XAttribute(XNamespace.Xmlns + "d", Common.xDav),
+                       new XAttribute(XNamespace.Xmlns + "c", Common.xCalDav),
+                       new XAttribute(XNamespace.Xmlns + "cs", Common.xCalCs),
+                   //new XAttribute(XNamespace.Xmlns + "ICAL", Common.xApple),
+                   Common.xDav.Element("response",
+                   Common.xDav.Element("href", Request.RawUrl),
+                   Common.xDav.Element("propstat",
+                               Common.xDav.Element("status", "HTTP/1.1 200 OK"),
+                               Common.xDav.Element("prop"
+                                   , calendarHomeSet
+                               )
+                           ),
+                           (prop404.Elements().Any() ? propStat404 : null)
+                    )
+                )
+            };
+
+            return result;
+
+            //var request = xdoc.Root.Elements().FirstOrDefault();
+            //switch (request.Name.LocalName.ToLower())
+            //{
+            //    case "calendar-collection-set":
+            //        var repo = GetService<ICalendarRepository>();
+            //        var calendars = repo.GetCalendars().ToArray();
+
+            //        return new Result
+            //        {
+            //            Content = CalDav.Common.xDav.Element("options-response",
+            //             CalDav.Common.xCalDav.Element("calendar-collection-set",
+            //                 calendars.Select(calendar =>
+            //                     CalDav.Common.xDav.Element("href",
+            //                         new Uri(Request.Url, GetCalendarUrl(calendar.Name))
+            //                         ))
+            //             )
+            //         )
+            //        };
+            //}
+            //return null;
+        }
+
+        public virtual ActionResult UserOption()
+        {
+            return new Result
+            {
+                Headers = new Dictionary<string, string> {
+                    {"DAV", "1, calendar-home-set" }
+                }
+            };
+        }
+
+        public virtual ActionResult CalendarOptions()
+        {
             return new Result
             {
                 Headers = new Dictionary<string, string> {
@@ -227,6 +331,11 @@ namespace CalDav.Server.Controllers
             var repo = GetService<ICalendarRepository>();
             var calendar = repo.GetCalendarByID(id);
 
+            //if (calendar == null)
+            //{
+            //    return HttpNotFound();
+            //}
+
             var xdoc = GetRequestXml();
             IEnumerable<XElement> props;
             var propNode = xdoc.Descendants(CalDav.Common.xDav.GetName("prop")).FirstOrDefault();
@@ -248,7 +357,7 @@ namespace CalDav.Server.Controllers
             var calendarUserAddressSetName = Common.xCalDav.GetName("calendar-user-address-set");
             var calendarUserAddress = !allprop && !props.Any(x => x.Name == calendarUserAddressSetName) ? null :
                 calendarUserAddressSetName.Element(
-                    hrefName.Element(GetUserUrl()),
+                    hrefName.Element(GetCurrentUserUrl()),
                     hrefName.Element("mailto:" + GetUserEmail())
                 );
 
@@ -266,7 +375,7 @@ namespace CalDav.Server.Controllers
 
             var calendarHomeSetName = Common.xCalDav.GetName("calendar-home-set");
             var calendarHomeSet = !allprop && !props.Any(x => x.Name == calendarHomeSetName) ? null :
-                calendarHomeSetName.Element(hrefName.Element(GetUserUrl()));
+                calendarHomeSetName.Element(hrefName.Element(GetCurrentUserUrl()));
 
             var getetagName = Common.xDav.GetName("getetag");
             var getetag = !allprop && !props.Any(x => x.Name == getetagName) ? null :
@@ -278,16 +387,39 @@ namespace CalDav.Server.Controllers
 
             var currentUserPrincipalName = Common.xDav.GetName("current-user-principal");
             var currentUserPrincipal = !props.Any(x => x.Name == currentUserPrincipalName) ? null :
-                currentUserPrincipalName.Element(hrefName.Element(GetUserUrl()));
+                currentUserPrincipalName.Element(hrefName.Element(GetCurrentUserUrl()));
+
+
+            var currentUserPrivilegeSetName = Common.xDav.GetName("current-user-privilege-set");
+            var currentUserPrivilegeSet = !props.Any(x => x.Name == currentUserPrivilegeSetName) ? null :
+                currentUserPrivilegeSetName.Element(new[] {
+                        Common.xDav.Element("privilege", 
+                            Common.xDav.Element("all"),
+                            Common.xDav.Element("read"),
+                            Common.xDav.Element("write"),
+                            Common.xDav.Element("write-properties"),
+                            Common.xDav.Element("write-content")),
+                       });
 
             var resourceTypeName = Common.xDav.GetName("resourcetype");
-            var resourceType = !allprop && !props.Any(x => x.Name == resourceTypeName) ? null : (
+            XElement resourceType;
+            if (Request.RawUrl == "/")
+            {
+                resourceType = !allprop && !props.Any(x => x.Name == resourceTypeName) ? null : (
+                       resourceTypeName.Element(Common.xDav.Element("collection"))
+                   );
+            }
+            else
+            {
+                resourceType = !allprop && !props.Any(x => x.Name == resourceTypeName) ? null : (
                     resourceTypeName.Element(Common.xDav.Element("collection"), Common.xCalDav.Element("calendar"), Common.xDav.Element("principal"))
                 );
+            }
+
 
             var ownerName = Common.xDav.GetName("owner");
             var owner = !allprop && !props.Any(x => x.Name == ownerName) ? null :
-                ownerName.Element(hrefName.Element(GetUserUrl()));
+                ownerName.Element(hrefName.Element(GetCurrentUserUrl()));
 
             var displayNameName = Common.xDav.GetName("displayname");
             var displayName = calendar == null || (!allprop && !props.Any(x => x.Name == displayNameName)) ? null :
@@ -295,9 +427,15 @@ namespace CalDav.Server.Controllers
 
             var color = calendar.Color;
             if (String.IsNullOrEmpty(color)) color = "#888888FF";
+
+            color = "FF5800";
             var calendarColorName = Common.xApple.GetName("calendar-color");
             var calendarColor = !allprop && !props.Any(x => x.Name == calendarColorName) ? null :
                 calendarColorName.Element(color);
+
+            var calendarOrderName = Common.xApple.GetName("calendar-order");
+            var calendarOrder = !allprop && !props.Any(x => x.Name == calendarOrderName) ? null :
+                calendarOrderName.Element("0");
 
             var calendarDescriptionName = Common.xCalDav.GetName("calendar-description");
             var calendarDescription = calendar == null || (!allprop && !props.Any(x => x.Name == calendarDescriptionName)) ? null :
@@ -322,7 +460,7 @@ namespace CalDav.Server.Controllers
                 , getContentTypeName
                 , displayNameName
                 , calendarDescriptionName
-                //, calendarColorName
+                , calendarColorName
                 , currentUserPrincipalName
                 , calendarHomeSetName
                 , calendarUserAddressSetName
@@ -330,6 +468,8 @@ namespace CalDav.Server.Controllers
                 , supportedReportSetName
                 , getctagName
                 , getetagName
+                , calendarOrderName
+                , currentUserPrivilegeSetName
             };
 
             var childSupportedProperties = new HashSet<XName> {
@@ -365,14 +505,14 @@ namespace CalDav.Server.Controllers
             var propStat404ForChilds = Common.xDav.Element("propstat",
                 Common.xDav.Element("status", "HTTP/1.1 404 Not Found"), prop404ForChilds);
 
-            return new Result
+            var result = new Result
             {
                 Status = (System.Net.HttpStatusCode)207,
                 Content = new XElement(Common.xDav + "multistatus",
                         new XAttribute(XNamespace.Xmlns + "d", Common.xDav),
                         new XAttribute(XNamespace.Xmlns + "c", Common.xCalDav),
                         new XAttribute(XNamespace.Xmlns + "cs", Common.xCalCs),
-                        //new XAttribute(XNamespace.Xmlns + "ICAL", Common.xApple),
+                        new XAttribute(XNamespace.Xmlns + "ICAL", Common.xApple),
                     Common.xDav.Element("response",
                     Common.xDav.Element("href", Request.RawUrl),
                     Common.xDav.Element("propstat",
@@ -392,6 +532,8 @@ namespace CalDav.Server.Controllers
                                     , calendarColor
                                     , calendarUserAddress
                                     , owner
+                                    , calendarOrder
+                                    , currentUserPrivilegeSet
                                 )
                             ),
 
@@ -408,13 +550,15 @@ namespace CalDav.Server.Controllers
                                         Common.xDav.Element("status", "HTTP/1.1 200 OK"),
                                         resourceType == null ? null : new XElement("prop", resourceTypeName.Element()),
                                         (getContentType == null ? null : getContentTypeName.Element("text/calendar; component=v" + item.GetType().Name.ToLower())),
-                                        getetag == null ? null : Common.xDav.Element("prop",  getetagName.Element(Common.EtagFromDate(item.Object.LastModified)))
+                                        getetag == null ? null : Common.xDav.Element("prop", getetagName.Element(Common.EtagFromDate(item.Object.LastModified)))
                                     )
                                     , (prop404ForChilds.Elements().Any() ? propStat404ForChilds : null)
                                 ))
                             .ToArray()))
                  )
             };
+
+            return result;
         }
 
         public virtual ActionResult MakeCalendar(string id)
@@ -479,12 +623,12 @@ namespace CalDav.Server.Controllers
 
                 Response.Write(sb.ToString());
             }
-         
+
 
             return null;
         }
 
-      
+
 
         public virtual ActionResult Report(string id)
         {
@@ -510,8 +654,10 @@ namespace CalDav.Server.Controllers
             if (filter != null) result = repo.GetObjectsByFilter(id, filter);
             else if (hrefs.Any())
                 result = hrefs
-                    .SelectMany<String, CalendarObjectData>(x => {
+                    .SelectMany<String, CalendarObjectData>(x =>
+                    {
                         var objectUid = GetObjectUIDFromPath(x);
+
                         if (!String.IsNullOrEmpty(objectUid))
                         {
                             return new[] { repo.GetObjectByUID(id, GetObjectUIDFromPath(x)) };
