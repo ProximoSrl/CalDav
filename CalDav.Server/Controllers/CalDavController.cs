@@ -39,11 +39,13 @@ namespace CalDav.Server.Controllers
         private String _currentXmlResponse;
 
         private const string _currentUrlThreadProperty = "CurrentUrl";
+        private const string _currentUserAgent = "User Agent";
 
         protected override void OnActionExecuting(ActionExecutingContext filterContext)
         {
             base.OnActionExecuting(filterContext);
             log4net.ThreadContext.Properties[_currentUrlThreadProperty] = Request.Url.AbsoluteUri;
+            log4net.ThreadContext.Properties[_currentUserAgent] = Request.UserAgent;
         }
 
         protected override void EndExecute(IAsyncResult asyncResult)
@@ -265,8 +267,40 @@ namespace CalDav.Server.Controllers
             var calendarHomeSet = !props.Any(x => x.Name == calendarHomeSetName) ? null :
                 calendarHomeSetName.Element(hrefName.Element(GetCurrentUserCalendar()));
 
+            var calendarUserAddressSetName = Common.xCalDav.GetName("calendar-user-address-set");
+            var calendarUserAddressSet = !props.Any(x => x.Name == calendarUserAddressSetName) ? null :
+                calendarUserAddressSetName.Element(hrefName.Element(GetCurrentUserCalendar()));
+
+            var currentPrincipalUrlName = Common.xDav.GetName("principal-URL");
+            var currentPrincipalUrl = !props.Any(x => x.Name == currentPrincipalUrlName) ? null :
+                currentPrincipalUrlName.Element(hrefName.Element(GetCurrentUserUrl()));
+
+            var currentPrincipalCollectionSetName = Common.xDav.GetName("principal-collection-set");
+            var currentPrincipalCollectionSet = !props.Any(x => x.Name == currentPrincipalCollectionSetName) ? null :
+                currentPrincipalCollectionSetName.Element(hrefName.Element(GetCurrentUserUrl()));
+
+            var displayNameName = Common.xDav.GetName("displayname");
+            var displayName = !props.Any(x => x.Name == displayNameName) ? null :
+                displayNameName.Element(Thread.CurrentPrincipal.Identity.Name);
+
+            var supportedReportSetName = Common.xDav.GetName("supported-report-set");
+            var supportedReportSet = !props.Any(x => x.Name == supportedReportSetName) ? null :
+                supportedReportSetName.Element(
+                    //Common.xDav.Element("supported-report", Common.xDav.Element("report", "calendar-multiget"))
+                    new[] {
+                        Common.xDav.Element("supported-report", Common.xDav.Element("report", "principal-property-search")),
+                        Common.xDav.Element("supported-report", Common.xDav.Element("report", "sync-collection")),
+                        Common.xDav.Element("supported-report", Common.xDav.Element("report", "expand-property")),
+                        Common.xDav.Element("supported-report", Common.xDav.Element("report", "principal-search-property-set")),
+                    });
+
             var supportedProperties = new HashSet<XName> {
                 calendarHomeSetName
+                , displayNameName
+                , calendarUserAddressSetName
+                , currentPrincipalUrlName
+                , currentPrincipalCollectionSetName
+                , supportedReportSetName
             };
 
             var prop404 = Common.xDav.Element("prop", props
@@ -291,6 +325,11 @@ namespace CalDav.Server.Controllers
                                Common.xDav.Element("status", "HTTP/1.1 200 OK"),
                                Common.xDav.Element("prop"
                                    , calendarHomeSet
+                                   , displayName
+                                   , calendarUserAddressSet
+                                   , currentPrincipalUrl
+                                   , currentPrincipalCollectionSet
+                                   , supportedReportSet
                                )
                            ),
                            (prop404.Elements().Any() ? propStat404 : null)
@@ -328,8 +367,9 @@ namespace CalDav.Server.Controllers
             return new Result
             {
                 Headers = new Dictionary<string, string> {
-                    {"DAV", "1, calendar-home-set" }
-                }
+                   {"Allow", "DELETE, HEAD, GET, MKCALENDAR, MKCOL, MOVE, OPTIONS, PROPFIND, PROPPATCH, PUT, REPORT" },
+                   { "DAV", " 1, 2, 3, calendar-access, addressbook, extended-mkcol" }
+               }
             };
         }
 
@@ -338,7 +378,8 @@ namespace CalDav.Server.Controllers
             return new Result
             {
                 Headers = new Dictionary<string, string> {
-                    {"Allow", "DELETE, HEAD, GET, MKCALENDAR, MKCOL, MOVE, OPTIONS, PROPFIND, PROPPATCH, PUT, REPORT" }
+                    {"Allow", "DELETE, HEAD, GET, MKCALENDAR, MKCOL, MOVE, OPTIONS, PROPFIND, PROPPATCH, PUT, REPORT" },
+                    { "DAV", " 1, 2, 3, calendar-access, addressbook, extended-mkcol" }
                 }
             };
         }
@@ -417,12 +458,19 @@ namespace CalDav.Server.Controllers
 
             var getctagName = Common.xCalCs.GetName("getctag");
             var getctag = !allprop && !props.Any(x => x.Name == getctagName) ? null :
-                getctagName.Element(DateTime.Now.Ticks);
+                getctagName.Element("\"" + DateTime.Now.Ticks + "\"");
+
+            //var syncTokenName = Common.xDav.GetName("sync-token");
+            //var syncToken = !allprop && !props.Any(x => x.Name == syncTokenName) ? null :
+            //    syncTokenName.Element("http://jarvisdav.org/ns/sync-token/" + DateTime.Now.Ticks);
 
             var currentUserPrincipalName = Common.xDav.GetName("current-user-principal");
             var currentUserPrincipal = !props.Any(x => x.Name == currentUserPrincipalName) ? null :
                 currentUserPrincipalName.Element(hrefName.Element(GetCurrentUserUrl()));
 
+            var currentPrincipalUrlName = Common.xDav.GetName("principal-URL");
+            var currentPrincipalUrl = !props.Any(x => x.Name == currentPrincipalUrlName) ? null :
+                currentPrincipalUrlName.Element(hrefName.Element(GetCurrentUserUrl()));
 
             var currentUserPrivilegeSetName = Common.xDav.GetName("current-user-privilege-set");
             var currentUserPrivilegeSet = !props.Any(x => x.Name == currentUserPrivilegeSetName) ? null :
@@ -504,13 +552,16 @@ namespace CalDav.Server.Controllers
                 , getetagName
                 , calendarOrderName
                 , currentUserPrivilegeSetName
+                , currentPrincipalUrlName
+                //, syncTokenName
             };
 
             var childSupportedProperties = new HashSet<XName> {
                 resourceTypeName
                 , getetagName
+                , currentUserPrivilegeSetName
                 //, ownerName
-                //, supportedComponentsName
+                , supportedComponentsName
                 , getContentTypeName
                 //, displayNameName
                 //, calendarDescriptionName
@@ -519,7 +570,7 @@ namespace CalDav.Server.Controllers
                 //, calendarHomeSetName
                 //, calendarUserAddressSetName
                 //, supportedComponentsName
-                //, supportedReportSetName
+                , supportedReportSetName
                 //, getctagName
             };
 
@@ -558,16 +609,17 @@ namespace CalDav.Server.Controllers
                                     , getctag
                                     , displayName
                                     , getetag
+                                    //, syncToken
                                     , getContentType
                                     , calendarDescription
                                     , calendarHomeSet
                                     , currentUserPrincipal
-                                    , supportedReportSet
                                     , calendarColor
                                     , calendarUserAddress
                                     , owner
                                     , calendarOrder
                                     , currentUserPrivilegeSet
+                                    , currentPrincipalUrl
                                 )
                             ),
 
@@ -582,7 +634,12 @@ namespace CalDav.Server.Controllers
                                 hrefName.Element(GetCalendarObjectUrl(calendar.ID, item.Object.UID)),
                                     Common.xDav.Element("propstat",
                                         Common.xDav.Element("status", "HTTP/1.1 200 OK"),
-                                        resourceType == null ? null : new XElement("prop", resourceTypeName.Element()),
+                                        resourceType == null ? null : new XElement("prop"
+                                            , currentUserPrivilegeSet
+                                            , resourceTypeName.Element()
+                                            , supportedComponents
+                                            , supportedReportSet
+                                        ),
                                         (getContentType == null ? null : getContentTypeName.Element("text/calendar; component=v" + item.GetType().Name.ToLower())),
                                         getetag == null ? null : Common.xDav.Element("prop", getetagName.Element(Common.EtagFromDate(item.Object.LastModified)))
                                     )
@@ -704,9 +761,10 @@ namespace CalDav.Server.Controllers
                     .Where(x => x != null)
                     .AsQueryable();
 
+            Result returnValue;
             if (result != null)
             {
-                return new Result
+                returnValue = new Result
                 {
                     Status = (System.Net.HttpStatusCode)207,
                     Content = CalDav.Common.xDav.Element("multistatus",
@@ -729,14 +787,17 @@ namespace CalDav.Server.Controllers
                     ))
                 };
             }
-
-            var calendar = repo.GetCalendarByID(id);
-            var returnValue = new Result
+            else
             {
-                Headers = new Dictionary<string, string> {
-                    {"ETag" , id == null ? null : Common.FormatDate( calendar.LastModified ) }
-                }
-            };
+                var calendar = repo.GetCalendarByID(id);
+                returnValue = new Result
+                    {
+                        Headers = new Dictionary<string, string> {
+                        {"ETag" , id == null ? null : Common.FormatDate( calendar.LastModified ) }
+                    }
+                };
+            }
+
             _currentXmlResponse = returnValue.Content.ToString();
             return returnValue;
         }
