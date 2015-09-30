@@ -1,4 +1,5 @@
 ﻿using CalDav.Server.Models;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,10 +20,44 @@ namespace CalDav.Server.Controllers
     public class CalDavController : Controller
     {
 
+        private static ILog _logger;
+
+        static CalDavController()
+        {
+            _logger = LogManager.GetLogger(typeof(CalDavController));
+        }
+
         public CalDavController()
         {
-
+            
         }
+
+        #region Logging
+
+        private String _currentXmlRequest;
+
+        private String _currentXmlResponse;
+
+        private const string _currentUrlThreadProperty = "CurrentUrl";
+
+        protected override void OnActionExecuting(ActionExecutingContext filterContext)
+        {
+            base.OnActionExecuting(filterContext);
+            log4net.ThreadContext.Properties[_currentUrlThreadProperty] = Request.Url.AbsoluteUri;
+        }
+
+        protected override void EndExecute(IAsyncResult asyncResult)
+        {
+            base.EndExecute(asyncResult);
+
+            _logger.DebugFormat("Request url {0} - Method {1}.\n\nRequest:\n{2}\n\nResponse:{3}",
+                Request.Url.AbsoluteUri, Request.HttpMethod, _currentXmlRequest, _currentXmlResponse);
+
+            log4net.ThreadContext.Properties.Clear();
+        }
+
+        #endregion Logging
+
         public static void RegisterRoutes(System.Web.Routing.RouteCollection routes, string routePrefix = "caldav", bool disallowMakeCalendar = false, bool requireAuthentication = false, string basicAuthenticationRealm = null)
         {
             RegisterRoutes<CalDavController>(routes, routePrefix, disallowMakeCalendar, requireAuthentication, basicAuthenticationRealm);
@@ -213,6 +248,7 @@ namespace CalDav.Server.Controllers
         public virtual ActionResult UserPropFind()
         {
             var xdoc = GetRequestXml();
+            _currentXmlRequest = xdoc.ToString();
             IEnumerable<XElement> props;
             var propNode = xdoc.Descendants(CalDav.Common.xDav.GetName("prop")).FirstOrDefault();
             if (propNode == null)
@@ -262,6 +298,7 @@ namespace CalDav.Server.Controllers
                 )
             };
 
+            _currentXmlResponse = result.Content.ToString();
             return result;
 
             //var request = xdoc.Root.Elements().FirstOrDefault();
@@ -327,16 +364,13 @@ namespace CalDav.Server.Controllers
 
         public virtual ActionResult PropFind(string id)
         {
+            var xdoc = GetRequestXml();
+            _currentXmlRequest = xdoc.ToString();
+
             var depth = Request.Headers["Depth"].ToInt() ?? 0;
             var repo = GetService<ICalendarRepository>();
             var calendar = repo.GetCalendarByID(id);
 
-            //if (calendar == null)
-            //{
-            //    return HttpNotFound();
-            //}
-
-            var xdoc = GetRequestXml();
             IEnumerable<XElement> props;
             var propNode = xdoc.Descendants(CalDav.Common.xDav.GetName("prop")).FirstOrDefault();
             if (propNode == null)
@@ -558,6 +592,7 @@ namespace CalDav.Server.Controllers
                  )
             };
 
+            _currentXmlResponse = result.Content.ToString();
             return result;
         }
 
@@ -633,6 +668,7 @@ namespace CalDav.Server.Controllers
         public virtual ActionResult Report(string id)
         {
             var xdoc = GetRequestXml();
+            _currentXmlRequest = xdoc.ToString();
             if (xdoc == null) return new Result();
 
             var repo = GetService<ICalendarRepository>();
@@ -695,12 +731,14 @@ namespace CalDav.Server.Controllers
             }
 
             var calendar = repo.GetCalendarByID(id);
-            return new Result
+            var returnValue = new Result
             {
                 Headers = new Dictionary<string, string> {
                     {"ETag" , id == null ? null : Common.FormatDate( calendar.LastModified ) }
                 }
             };
+            _currentXmlResponse = returnValue.Content.ToString();
+            return returnValue;
         }
 
         public ActionResult NotImplemented()
