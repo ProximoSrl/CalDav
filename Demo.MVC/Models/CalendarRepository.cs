@@ -1,6 +1,7 @@
 ﻿using CalDav.Server.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Principal;
 
@@ -165,5 +166,16 @@ namespace CalDav.MVC.Models {
 				return;
 			System.IO.File.Delete(filename);
 		}
-	}
+
+        public string GetCtag(string calendarId)
+        {
+            if (string.IsNullOrEmpty(calendarId)) calendarId = "me";
+            calendarId = MakePathSafe(calendarId);
+            var filename = System.IO.Path.Combine(_Directory, calendarId + "\\_.ical");
+            var fi = new FileInfo(filename);
+            if (fi.Exists == false) return DateTime.Now.Ticks.ToString();
+
+            return fi.LastWriteTime.Ticks.ToString();
+        }
+    }
 }

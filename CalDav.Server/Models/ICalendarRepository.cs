@@ -17,6 +17,13 @@ namespace CalDav.Server.Models {
 		IQueryable<CalendarObjectData> GetObjects(String calendarId);
 
 		void DeleteObject(ICalendarInfo calendar, string uid);
+
+        /// <summary>
+        /// Retrieve CTAG information for a given calendar.
+        /// </summary>
+        /// <param name="calendarId"></param>
+        /// <returns></returns>
+        String GetCtag(string calendarId);
 	}
 
     public class CalendarObjectData
