@@ -58,6 +58,13 @@ namespace CalDav.Server.Controllers
             log4net.ThreadContext.Properties.Clear();
         }
 
+        protected override void OnException(ExceptionContext filterContext)
+        {
+            base.OnException(filterContext);
+            _logger.Error(string.Format("Error Executing request  url {0} - Method {1}.\n\nRequest:\n{2}\n\nResponse:{3}",
+                Request.Url.AbsoluteUri, Request.HttpMethod, _currentXmlRequest, _currentXmlResponse), filterContext.Exception);
+        }
+
         #endregion Logging
 
         public static void RegisterRoutes(System.Web.Routing.RouteCollection routes, string routePrefix = "caldav", bool disallowMakeCalendar = false, bool requireAuthentication = false, string basicAuthenticationRealm = null)
@@ -452,17 +459,22 @@ namespace CalDav.Server.Controllers
             var calendarHomeSet = !allprop && !props.Any(x => x.Name == calendarHomeSetName) ? null :
                 calendarHomeSetName.Element(hrefName.Element(GetCurrentUserUrl()));
 
+            String ctag;
+            if (calendar == null)
+                ctag = DateTime.Now.Ticks.ToString();
+            else
+                ctag = repo.GetCtag(calendar.ID);
             var getetagName = Common.xDav.GetName("getetag");
             var getetag = !allprop && !props.Any(x => x.Name == getetagName) ? null :
-                getetagName.Element(DateTime.Now.Ticks);
+                getetagName.Element(ctag);
 
             var getctagName = Common.xCalCs.GetName("getctag");
             var getctag = !allprop && !props.Any(x => x.Name == getctagName) ? null :
-                getctagName.Element("\"" + DateTime.Now.Ticks + "\"");
+                getctagName.Element("\"" + ctag + "\"");
 
-            //var syncTokenName = Common.xDav.GetName("sync-token");
-            //var syncToken = !allprop && !props.Any(x => x.Name == syncTokenName) ? null :
-            //    syncTokenName.Element("http://jarvisdav.org/ns/sync-token/" + DateTime.Now.Ticks);
+            var syncTokenName = Common.xDav.GetName("sync-token");
+            var syncToken = !allprop && !props.Any(x => x.Name == syncTokenName) ? null :
+                syncTokenName.Element("http://jarvisdav.org/ns/sync-token/" + DateTime.Now.Ticks);
 
             var currentUserPrincipalName = Common.xDav.GetName("current-user-principal");
             var currentUserPrincipal = !props.Any(x => x.Name == currentUserPrincipalName) ? null :
@@ -507,7 +519,7 @@ namespace CalDav.Server.Controllers
             var displayName = calendar == null || (!allprop && !props.Any(x => x.Name == displayNameName)) ? null :
                 displayNameName.Element(calendar.Name ?? calendar.ID);
 
-            var color = calendar.Color;
+            var color = calendar != null ? calendar.Color : "";
             if (String.IsNullOrEmpty(color)) color = "#888888FF";
 
             color = "FF5800";
@@ -553,7 +565,7 @@ namespace CalDav.Server.Controllers
                 , calendarOrderName
                 , currentUserPrivilegeSetName
                 , currentPrincipalUrlName
-                //, syncTokenName
+                , syncTokenName
             };
 
             var childSupportedProperties = new HashSet<XName> {
@@ -571,7 +583,7 @@ namespace CalDav.Server.Controllers
                 //, calendarUserAddressSetName
                 //, supportedComponentsName
                 , supportedReportSetName
-                //, getctagName
+                , getctagName
             };
 
             var prop404 = Common.xDav.Element("prop", props
@@ -609,7 +621,7 @@ namespace CalDav.Server.Controllers
                                     , getctag
                                     , displayName
                                     , getetag
-                                    //, syncToken
+                                    , syncToken
                                     , getContentType
                                     , calendarDescription
                                     , calendarHomeSet
@@ -639,9 +651,10 @@ namespace CalDav.Server.Controllers
                                             , resourceTypeName.Element()
                                             , supportedComponents
                                             , supportedReportSet
-                                        ),
-                                        (getContentType == null ? null : getContentTypeName.Element("text/calendar; component=v" + item.GetType().Name.ToLower())),
-                                        getetag == null ? null : Common.xDav.Element("prop", getetagName.Element(Common.EtagFromDate(item.Object.LastModified)))
+                                            , (getContentType == null ? null : getContentTypeName.Element("text/calendar; component=v" + item.GetType().Name.ToLower()))
+                                            , getetag == null ? null : getetagName.Element(Common.EtagFromDate(item.Object.LastModified))
+                                            , getctag == null ? null : getctagName.Element(Common.EtagFromDate(item.Object.LastModified))
+                                        )
                                     )
                                     , (prop404ForChilds.Elements().Any() ? propStat404ForChilds : null)
                                 ))
@@ -798,7 +811,10 @@ namespace CalDav.Server.Controllers
                 };
             }
 
-            _currentXmlResponse = returnValue.Content.ToString();
+            if (returnValue.Content != null)
+            {
+                _currentXmlResponse = returnValue.Content.ToString();
+            }
             return returnValue;
         }
 
