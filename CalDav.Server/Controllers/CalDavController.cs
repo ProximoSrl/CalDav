@@ -583,7 +583,7 @@ namespace CalDav.Server.Controllers
                 //, calendarUserAddressSetName
                 //, supportedComponentsName
                 , supportedReportSetName
-                , getctagName
+                //, getctagName
             };
 
             var prop404 = Common.xDav.Element("prop", props
@@ -644,16 +644,21 @@ namespace CalDav.Server.Controllers
                          .ToArray()
                             .Select(item => Common.xDav.Element("response",
                                 hrefName.Element(GetCalendarObjectUrl(calendar.ID, item.Object.UID)),
+                                    item.Deleted 
+                                    ?
+                                    Common.xDav.Element("status", "HTTP/1.1 404 Not Found")
+                                    :
+                                    //item is not deleted
                                     Common.xDav.Element("propstat",
                                         Common.xDav.Element("status", "HTTP/1.1 200 OK"),
-                                        resourceType == null ? null : new XElement("prop"
+                                         Common.xDav.Element("prop"
                                             , currentUserPrivilegeSet
                                             , resourceTypeName.Element()
                                             , supportedComponents
                                             , supportedReportSet
                                             , (getContentType == null ? null : getContentTypeName.Element("text/calendar; component=v" + item.GetType().Name.ToLower()))
                                             , getetag == null ? null : getetagName.Element(Common.EtagFromDate(item.Object.LastModified))
-                                            , getctag == null ? null : getctagName.Element(Common.EtagFromDate(item.Object.LastModified))
+                                            //, getctag == null ? null : getctagName.Element(Common.EtagFromDate(item.Object.LastModified))
                                         )
                                     )
                                     , (prop404ForChilds.Elements().Any() ? propStat404ForChilds : null)

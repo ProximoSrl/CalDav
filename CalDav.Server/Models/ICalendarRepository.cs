@@ -31,5 +31,12 @@ namespace CalDav.Server.Models {
         public ICalendarObject Object { get; set; }
 
         public IEnumerable<TimeZone> TimeZones { get; set; }
+
+        /// <summary>
+        /// http://sabre.io/dav/building-a-caldav-client/
+        /// We need to return a 404 for events that were deleted, this means that 
+        /// the repository should return info for deleted object.
+        /// </summary>
+        public Boolean Deleted { get; set; }
     }
 }
