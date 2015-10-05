@@ -474,7 +474,7 @@ namespace CalDav.Server.Controllers
 
             var syncTokenName = Common.xDav.GetName("sync-token");
             var syncToken = !allprop && !props.Any(x => x.Name == syncTokenName) ? null :
-                syncTokenName.Element("http://jarvisdav.org/ns/sync-token/" + DateTime.Now.Ticks);
+                syncTokenName.Element("http://csharpdav.org/ns/sync-token/" + ctag);
 
             var currentUserPrincipalName = Common.xDav.GetName("current-user-principal");
             var currentUserPrincipal = !props.Any(x => x.Name == currentUserPrincipalName) ? null :
@@ -750,30 +750,50 @@ namespace CalDav.Server.Controllers
             var hrefs = xdoc.Descendants(hrefName).Select(x => x.Value).ToArray();
             var getetagName = CalDav.Common.xDav.GetName("getetag");
             var getetag = xdoc.Descendants(getetagName).FirstOrDefault();
+
             var calendarDataName = CalDav.Common.xCalDav.GetName("calendar-data");
             var calendarData = xdoc.Descendants(calendarDataName).FirstOrDefault();
+
+            var syncTokenName = Common.xDav.GetName("sync-token");
+            var syncToken = xdoc.Descendants(syncTokenName).FirstOrDefault();
 
             var ownerName = Common.xDav.GetName("owner");
             var displaynameName = Common.xDav.GetName("displayname");
 
             IQueryable<CalendarObjectData> result = null;
-            if (filter != null) result = repo.GetObjectsByFilter(id, filter);
+            if (filter != null)
+            {
+                //Get object by filter, this still need to be correctly implemented
+                //by repo
+                result = repo.GetObjectsByFilter(id, filter);
+            }
             else if (hrefs.Any())
+            {
+                //we have a list of hrefs of element to retrieve.
                 result = hrefs
-                    .SelectMany<String, CalendarObjectData>(x =>
-                    {
-                        var objectUid = GetObjectUIDFromPath(x);
+                  .SelectMany<String, CalendarObjectData>(x =>
+                  {
+                      var objectUid = GetObjectUIDFromPath(x);
 
-                        if (!String.IsNullOrEmpty(objectUid))
-                        {
-                            return new[] { repo.GetObjectByUID(id, GetObjectUIDFromPath(x)) };
-                        }
+                      if (!String.IsNullOrEmpty(objectUid))
+                      {
+                          return new[] { repo.GetObjectByUID(id, GetObjectUIDFromPath(x)) };
+                      }
 
-                        return repo.GetObjects(id);
-                    })
-                    .Where(x => x != null)
-                    .AsQueryable();
-
+                      return repo.GetObjects(id);
+                  })
+                  .Where(x => x != null)
+                  .AsQueryable();
+            }
+            else if (syncToken != null)
+            {
+                //synctoken request
+                var syncTokenUrl = new Uri(syncToken.Value);
+                var ticks = Int64.Parse( syncTokenUrl.Segments.Last());
+                DateTime dateFrom = new DateTime(ticks);
+                result = repo.GetObjectsByFilter(id, null)
+                    .Where(obj => obj.Object.LastModified >= dateFrom);
+            }
             Result returnValue;
             if (result != null)
             {
