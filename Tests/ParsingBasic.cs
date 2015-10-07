@@ -141,6 +141,22 @@ namespace Tests {
             Assert.IsTrue(serialized.Contains("RRULE:FREQ=DAILY;UNTIL=20151015T110000Z"));
         }
 
+        [TestMethod]
+        public void Event_support_exdate()
+        {
+            var text = TestData.PutWithEXDATE;
+            var calendar = DeserializeCalendar(text);
+
+            var evt = (Event)calendar.Items.Single();
+            Assert.AreEqual(1, evt.Recurrences.Count);
+            Assert.AreEqual(1, evt.ExDates.Count, "Count of Exdate wrong");
+            StringBuilder sb = new StringBuilder();
+            string serialized = SerializeCalendar(calendar, sb);
+
+            Assert.IsTrue(serialized.Contains("EXDATE:20151013T140000"), "No EXDATE in serialized form");
+            Assert.IsFalse(serialized.Contains("EXDATE:20151013T140000Z"), "EXDATE should not end with Z");
+        }
+
         private static string SerializeCalendar(Calendar calendar, StringBuilder sb)
         {
             using (var tw = new StringWriter(sb))

@@ -14,6 +14,7 @@ namespace CalDav {
 			Recurrences = new List<Recurrence>();
 			Properties = new List<Tuple<string, string, System.Collections.Specialized.NameValueCollection>>();
 			Attachments = new List<Uri>();
+            ExDates = new List<DateTime>();
 		}
 
         /// <summary>
@@ -55,7 +56,13 @@ namespace CalDav {
 		public virtual Contact Organizer { get; set; }
 		public virtual ICollection<Recurrence> Recurrences { get; set; }
 
-		public ICollection<Tuple<string, string, System.Collections.Specialized.NameValueCollection>> Properties { get; set; }
+        /// <summary>
+        /// With recurring appointment, when you want to exclude a single appointment
+        /// from the scheduling.
+        /// </summary>
+        public virtual ICollection<DateTime> ExDates { get; set; }
+
+        public ICollection<Tuple<string, string, System.Collections.Specialized.NameValueCollection>> Properties { get; set; }
 
 		public void Deserialize(System.IO.TextReader rdr, Serializer serializer) {
 			string name, value, rigthPart;
@@ -114,7 +121,10 @@ namespace CalDav {
 						rule.Deserialize(null, parameters);
 						Recurrences.Add(rule);
 						break;
-					case "END": return;
+                    case "EXDATE":
+                        ExDates.Add(value.ToDateTime().GetValueOrDefault());
+                        break;
+                    case "END": return;
 					default:
 						Properties.Add(Tuple.Create(name, value, parameters));
 						break;
@@ -178,7 +188,12 @@ namespace CalDav {
                 {
                     wrtr.Property("RRULE", recurrence.ToString(), encoded : true);
                 }
-                    
+                
+            if (ExDates.Any())
+                foreach (var exdate in ExDates)
+                {
+                    wrtr.Property("EXDATE", exdate);
+                }
             wrtr.Property("TRANSP", Transparency);
 			wrtr.Property("URL", Url);
 			if (Properties != null)
