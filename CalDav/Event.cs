@@ -173,9 +173,14 @@ namespace CalDav {
 			wrtr.Property("SEQUENCE", Sequence);
 			wrtr.Property("STATUS", Status);
 			wrtr.Property("SUMMARY", Summary);
-			wrtr.Property("TRANSP", Transparency);
+            if (Recurrences.Any())
+                foreach (var recurrence in Recurrences)
+                {
+                    wrtr.Property("RRULE", recurrence.ToString(), encoded : true);
+                }
+                    
+            wrtr.Property("TRANSP", Transparency);
 			wrtr.Property("URL", Url);
-
 			if (Properties != null)
 				foreach (var prop in Properties)
 					wrtr.Property(prop.Item1, prop.Item2, parameters: prop.Item3);

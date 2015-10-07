@@ -125,5 +125,30 @@ namespace Tests {
             Assert.IsTrue(sb.ToString().Contains("DTSTART;TZID=Europe/Rome:20150916T093000"));
             Assert.IsTrue(sb.ToString().Contains("DTEND;TZID=Europe/Rome:20150916T103000"));
         }
+
+        [TestMethod]
+        public void Correctly_serialize_recurring_events()
+        {
+            var text = TestData.PutRecurring;
+            var calendar = DeserializeCalendar(text);
+
+            var evt = (Event)calendar.Items.Single();
+            Assert.AreEqual(1, evt.Recurrences.Count);
+
+            StringBuilder sb = new StringBuilder();
+            string serialized = SerializeCalendar(calendar, sb);
+
+            Assert.IsTrue(serialized.Contains("RRULE:FREQ=DAILY;UNTIL=20151015T110000Z"));
+        }
+
+        private static string SerializeCalendar(Calendar calendar, StringBuilder sb)
+        {
+            using (var tw = new StringWriter(sb))
+            {
+                calendar.Serialize(tw);
+            }
+            var serialized = sb.ToString();
+            return serialized;
+        }
     }
 }
