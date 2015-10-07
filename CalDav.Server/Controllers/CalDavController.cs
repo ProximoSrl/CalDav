@@ -812,6 +812,10 @@ namespace CalDav.Server.Controllers
                     result.Select(r =>
                      CalDav.Common.xDav.Element("response",
                          CalDav.Common.xDav.Element("href", Request.RawUrl.TrimEnd('/') + "/" + r.Object.UID + ".ics"),
+                         r.Deleted
+                         ?
+                         Common.xDav.Element("status", "HTTP/1.1 404 Not Found")
+                         :
                          CalDav.Common.xDav.Element("propstat",
                              CalDav.Common.xDav.Element("status", "HTTP/1.1 200 OK"),
                              CalDav.Common.xDav.Element("prop",
