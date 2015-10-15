@@ -188,8 +188,11 @@ namespace CalDav.Server.Controllers
                         
                 }
             }
-            catch (SecurityException)
+            catch (SecurityException ex)
             {
+                _logger.Warn(string.Format("SecurityException Executing request url {0} - Method {1}.\n\nRequest:\n{2}\n\nResponse:{3}",
+                    Request.Url.AbsoluteUri, Request.HttpMethod, _currentXmlRequest, _currentXmlResponse), ex);
+
                 return Unauthorized();
             }
 
