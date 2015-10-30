@@ -67,12 +67,24 @@ namespace CalDav.Server.Controllers
 
         #endregion Logging
 
-        public static void RegisterRoutes(System.Web.Routing.RouteCollection routes, string routePrefix = "caldav", bool disallowMakeCalendar = false, bool requireAuthentication = false, string basicAuthenticationRealm = null)
+        public static void RegisterRoutes(
+            RouteCollection routes, 
+            string routePrefix = "caldav",
+            Boolean useCalendarPrefix = true,
+            bool disallowMakeCalendar = false, 
+            bool requireAuthentication = false, 
+            string basicAuthenticationRealm = null)
         {
-            RegisterRoutes<CalDavController>(routes, routePrefix, disallowMakeCalendar, requireAuthentication, basicAuthenticationRealm);
+            RegisterRoutes<CalDavController>(routes, routePrefix, useCalendarPrefix, disallowMakeCalendar, requireAuthentication, basicAuthenticationRealm);
         }
 
-        public static void RegisterRoutes<T>(System.Web.Routing.RouteCollection routes, string routePrefix = "caldav", bool disallowMakeCalendar = false, bool requireAuthentication = false, string basicAuthenticationRealm = null)
+        public static void RegisterRoutes<T>(
+            RouteCollection routes, 
+            string routePrefix = "caldav", 
+            Boolean useCalendarPrefix = true,
+            bool disallowMakeCalendar = false, 
+            bool requireAuthentication = false, 
+            string basicAuthenticationRealm = null)
             where T : CalDavController
         {
             var caldavControllerType = typeof(T);
@@ -85,7 +97,6 @@ namespace CalDav.Server.Controllers
             var defaults = new { controller, action = "index" };
             MapFirst(routes, "CalDav Root", string.Empty, new { controller, action = "PropFind" }, namespaces, new { httpMethod = new Method("PROPFIND") });
             MapFirst(routes, "CalDav", BASE = routePrefix, defaults, namespaces);
-            MapFirst(routes, "CalDav", BASE = routePrefix, defaults, namespaces);
             MapFirst(
                 routes,
                 "CalDav User",
@@ -93,19 +104,25 @@ namespace CalDav.Server.Controllers
                 new { controller, action = "userRoot" },
                 namespaces);
 
-            MapFirst(routes, "CalDav Calendar", CALENDAR_ROUTE = routePrefix + "/calendar/{id}/", defaults, namespaces);
+            var calendarRoute = useCalendarPrefix ? "/calendar" : "";
+            MapFirst(routes, "CalDav Calendar", CALENDAR_ROUTE = routePrefix + calendarRoute + "/{id}/", defaults, namespaces);
             //Added to support options called root of the caldav.
+
             MapFirst(
                 routes,
                 "CalDav Calendar options home",
-                routePrefix + "/calendar/",
+                routePrefix + calendarRoute + "/",
                 new { controller, action = "indexRoot" },
                 namespaces
             );
 
             MapFirst(routes, "CalDav Object", OBJECT_ROUTE = routePrefix + "/{uid}.ics", defaults, namespaces);
-            MapFirst(routes, "CalDav Calendar Object", CALENDAR_OBJECT_ROUTE = routePrefix + "/calendar/{id}/{uid}.ics", defaults, namespaces);
-            rxObjectRoute = new Regex(routePrefix + "(/calendar/(?<id>[^/]+))?/(?<uid>.+?).ics", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            MapFirst(routes, "CalDav Calendar Object", CALENDAR_OBJECT_ROUTE = routePrefix + calendarRoute + "/{id}/{uid}.ics", defaults, namespaces);
+
+            OBJECT_ROUTE = OBJECT_ROUTE.TrimStart('/');
+            CALENDAR_OBJECT_ROUTE = CALENDAR_OBJECT_ROUTE.TrimStart('/');
+
+            rxObjectRoute = new Regex(routePrefix + calendarRoute + "(/(?<id>[^/]+))?/(?<uid>.+?).ics", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
             RequireAuthentication = requireAuthentication;
             BasicAuthenticationRealm = basicAuthenticationRealm;
@@ -114,12 +131,26 @@ namespace CalDav.Server.Controllers
 
         private static void MapFirst(System.Web.Routing.RouteCollection routes, string name, string path, object defaults, string[] namespaces, object constraints = null)
         {
+            Route route = CreateRoute(routes, name, path, defaults, constraints);
+            routes.Insert(0, route);
+        }
+
+        private static void MapLast(System.Web.Routing.RouteCollection routes, string name, string path, object defaults, string[] namespaces, object constraints = null)
+        {
+            Route route = CreateRoute(routes, name, path, defaults, constraints);
+            routes.Add(route);
+        }
+
+        private static Route CreateRoute(RouteCollection routes, string name, string path, object defaults, object constraints)
+        {
+            path = path.TrimStart('/');
             var route = routes.MapRoute(name, path, defaults);
             if (constraints != null)
                 route.Constraints = new System.Web.Routing.RouteValueDictionary(constraints);
             routes.Remove(route);
-            routes.Insert(0, route);
+            return route;
         }
+
 
         public virtual ActionResult IndexRoot(string id, string uid)
         {
@@ -249,7 +280,8 @@ namespace CalDav.Server.Controllers
         {
             if (string.IsNullOrEmpty(id))
                 return "/" + OBJECT_ROUTE.Replace("{uid}", Uri.EscapeDataString(uid));
-            return "/" + CALENDAR_OBJECT_ROUTE.Replace("{id}", Uri.EscapeDataString(id)).Replace("{uid}", Uri.EscapeDataString(uid));
+            var url = "/" + CALENDAR_OBJECT_ROUTE.Replace("{id}", Uri.EscapeDataString(id)).Replace("{uid}", Uri.EscapeDataString(uid));
+            return url;
         }
         protected virtual string GetObjectUIDFromPath(string path)
         {
