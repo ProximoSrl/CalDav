@@ -11,22 +11,25 @@ namespace CalDav {
 		public string[] ByDay { get; set; }
 		public int? ByMonthDay { get; set; }
 
-		public System.Collections.Specialized.NameValueCollection GetParameters() { return null; }
-
-		public override string ToString() {
-			var parameters = new System.Collections.Specialized.NameValueCollection();
-			if (Count != null) parameters["COUNT"] = Count.ToString();
-			if (Interval != null) parameters["INTERVAL"] = Interval.ToString();
-			if (Frequency != null) parameters["FREQ"] = Frequency.Value.ToString().ToUpper();
-			if (Until != null) parameters["UNTIL"] = Common.FormatDate(Until.Value);
-			if (ByMonth != null) parameters["BYMONTH"] = ByMonth.ToString();
-			if (ByMonthDay != null) parameters["BYMONTHDAY"] = ByMonthDay.ToString();
-			if (ByDay != null && ByDay.Length > 0) parameters["BYDAY"] = string.Join(",", ByDay);
-
-			return Common.FormatParameters(parameters).TrimStart(';');
+		public override string ToString()
+        {
+			return Common.FormatParameters(GetParameters()).TrimStart(';');
 		}
 
-		public void Deserialize(string value, System.Collections.Specialized.NameValueCollection parameters) {
+        public System.Collections.Specialized.NameValueCollection GetParameters()
+        {
+            var parameters = new System.Collections.Specialized.NameValueCollection();
+            if (Count != null) parameters["COUNT"] = Count.ToString();
+            if (Interval != null) parameters["INTERVAL"] = Interval.ToString();
+            if (Frequency != null) parameters["FREQ"] = Frequency.Value.ToString().ToUpper();
+            if (Until != null) parameters["UNTIL"] = Common.FormatDate(Until.Value);
+            if (ByMonth != null) parameters["BYMONTH"] = ByMonth.ToString();
+            if (ByMonthDay != null) parameters["BYMONTHDAY"] = ByMonthDay.ToString();
+            if (ByDay != null && ByDay.Length > 0) parameters["BYDAY"] = string.Join(",", ByDay);
+            return parameters;
+        }
+
+        public void Deserialize(string value, System.Collections.Specialized.NameValueCollection parameters) {
 			Count = parameters["COUNT"].ToInt();
 			Interval = parameters["INTERVAL"].ToInt();
 			Frequency = parameters["FREQ"].ToEnum<Frequencies>();
@@ -35,5 +38,7 @@ namespace CalDav {
 			ByMonthDay = parameters["BYMONTHDAY"].ToInt();
 			ByDay = parameters["BYDAY"].SplitEscaped().ToArray();
 		}
-	}
+
+
+    }
 }

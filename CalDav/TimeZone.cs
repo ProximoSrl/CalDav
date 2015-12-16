@@ -43,8 +43,8 @@ namespace CalDav {
 				wrtr.Property("DTSTART", Start);
 				if (Recurrences != null)
 					foreach (var rule in Recurrences)
-						wrtr.Property("RRULE", rule);
-				if (OffsetFrom != null)
+                        wrtr.Property("RRULE", rule.ToString(), encoded: true);
+                if (OffsetFrom != null)
 					wrtr.Property("TZOFFSETFROM", OffsetFrom);
 				if (OffsetFrom != null)
 					wrtr.Property("TZOFFSETTO", OffsetTo);

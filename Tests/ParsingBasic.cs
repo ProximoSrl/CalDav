@@ -1,5 +1,4 @@
 ﻿using CalDav;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Shouldly;
 using System;
 using System.Collections.Specialized;
@@ -7,11 +6,12 @@ using System.IO;
 using System.Net.Mail;
 using System.Text;
 using System.Linq;
+using NUnit.Framework;
 
 namespace Tests {
-	[TestClass]
+	[TestFixture]
 	public class ParsingBasic {
-		[TestMethod]
+		[Test]
 		public void KeyValue() {
 			var values = DeserializeProperty("TEST;VALUE1=ONE;VALUE2=TWO:tested\n\t tested");
 			values.Item1.ShouldBe("TEST");
@@ -48,7 +48,7 @@ namespace Tests {
         }
 
 
-        [TestMethod]
+        [Test]
 		public void Contact() {
 			var text = "ORGANIZER;CN=JohnSmith;DIR=\"ldap" + "://host.com:6666/o=3DDC Associates,c=3DUS??(cn=3DJohn Smith)\":MAILTO" + ":jsmith@host1.com";
 			var contact = Deserialize<Contact>(text);
@@ -69,7 +69,7 @@ namespace Tests {
 			return name + Common.FormatParameters(obj.GetParameters()) + ":" + obj.ToString();
 		}
 
-		[TestMethod]
+		[Test]
 		public void Trigger() {
 			var text = "TRIGGER;VALUE=DATE-TIME:20120328T133700Z";
 			var trigger = Deserialize<Trigger>(text);
@@ -86,7 +86,7 @@ namespace Tests {
 		}
 
 
-        [TestMethod]
+        [Test]
         public void TimeZone_Deserialized_from_calendar()
         {
             var text = TestData.AndroidPut;
@@ -104,7 +104,7 @@ namespace Tests {
             Console.WriteLine(sb.ToString());
         }
 
-        [TestMethod]
+        [Test]
         public void TimeZone_parse_start_and_end()
         {
             var text = TestData.AndroidPut;
@@ -124,6 +124,47 @@ namespace Tests {
 
             Assert.IsTrue(sb.ToString().Contains("DTSTART;TZID=Europe/Rome:20150916T093000"));
             Assert.IsTrue(sb.ToString().Contains("DTEND;TZID=Europe/Rome:20150916T103000"));
+        }
+
+        [Test]
+        public void Correctly_serialize_recurring_events()
+        {
+            var text = TestData.PutRecurring;
+            var calendar = DeserializeCalendar(text);
+
+            var evt = (Event)calendar.Items.Single();
+            Assert.AreEqual(1, evt.Recurrences.Count);
+
+            StringBuilder sb = new StringBuilder();
+            string serialized = SerializeCalendar(calendar, sb);
+
+            Assert.IsTrue(serialized.Contains("RRULE:FREQ=DAILY;UNTIL=20151015T110000Z"));
+        }
+
+        [Test]
+        public void Event_support_exdate()
+        {
+            var text = TestData.PutWithEXDATE;
+            var calendar = DeserializeCalendar(text);
+
+            var evt = (Event)calendar.Items.Single();
+            Assert.AreEqual(1, evt.Recurrences.Count);
+            Assert.AreEqual(1, evt.ExDates.Count, "Count of Exdate wrong");
+            StringBuilder sb = new StringBuilder();
+            string serialized = SerializeCalendar(calendar, sb);
+
+            Assert.IsTrue(serialized.Contains("EXDATE:20151013T140000"), "No EXDATE in serialized form");
+            Assert.IsFalse(serialized.Contains("EXDATE:20151013T140000Z"), "EXDATE should not end with Z");
+        }
+
+        private static string SerializeCalendar(Calendar calendar, StringBuilder sb)
+        {
+            using (var tw = new StringWriter(sb))
+            {
+                calendar.Serialize(tw);
+            }
+            var serialized = sb.ToString();
+            return serialized;
         }
     }
 }

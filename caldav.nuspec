@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Jarvis.CalDav</id>
+    <version>1.0.0</version>
+    <authors>SyncToday then forked by Proximo S.r.L.</authors>
+    <owners></owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <releaseNotes></releaseNotes>
+    <copyright></copyright>
+	<projectUrl>https://github.com/ProximoSrl/CalDav</projectUrl>
+    <tags>Jarvis,Framework</tags>
+	 <description>A library for CalDav forked by the original project https://github.com/SyncToday/CalDav</description>
+        <summary>This library was originally developed at https://github.com/SyncToday/CalDav then forked to extend it.
+	</summary>
+
+
+    <dependencies>
+	  
+    </dependencies>
+  </metadata>
+
+  <files>
+    <file src="caldav\bin\release\caldav.dll" target="lib" />
+    <file src="Caldav.Server\bin\release\Caldav.Server.dll" target="lib" />
+  </files>
+
+</package>

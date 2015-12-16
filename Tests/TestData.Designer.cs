@@ -90,5 +90,61 @@ namespace Tests {
                 return ResourceManager.GetString("AndroidPut", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to BEGIN:VCALENDAR
+        ///PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN
+        ///VERSION:2.0
+        ///BEGIN:VTIMEZONE
+        ///TZID:Europe/Berlin
+        ///BEGIN:DAYLIGHT
+        ///TZOFFSETFROM:+0100
+        ///TZOFFSETTO:+0200
+        ///TZNAME:CEST
+        ///DTSTART:19700329T020000
+        ///RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3
+        ///END:DAYLIGHT
+        ///BEGIN:STANDARD
+        ///TZOFFSETFROM:+0200
+        ///TZOFFSETTO:+0100
+        ///TZNAME:CET
+        ///DTSTART:19701025T030000
+        ///RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10
+        ///END:STANDARD
+        ///END:VTIMEZONE
+        ///BEGIN:VEVENT
+        ///CREATED:20151007T103938Z
+        ///LAST-MODIFIED:20151007T103946Z
+        ///DTSTAMP:2 [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string PutRecurring {
+            get {
+                return ResourceManager.GetString("PutRecurring", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to BEGIN:VCALENDAR
+        ///PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN
+        ///VERSION:2.0
+        ///BEGIN:VEVENT
+        ///LAST-MODIFIED:20151007T111607Z
+        ///DTSTAMP:20151007T111607Z
+        ///UID:8ac339c8-fa1c-4d23-9ee9-8b16e303c13d
+        ///SUMMARY:rec3
+        ///RRULE:FREQ=DAILY;COUNT=8;INTERVAL=5
+        ///EXDATE:20151013T140000
+        ///DTSTART:20151008T140000
+        ///DTEND:20151008T150000
+        ///SEQUENCE:1
+        ///X-MOZ-GENERATION:1
+        ///END:VEVENT
+        ///END:VCALENDAR.
+        /// </summary>
+        internal static string PutWithEXDATE {
+            get {
+                return ResourceManager.GetString("PutWithEXDATE", resourceCulture);
+            }
+        }
     }
 }
