@@ -1,13 +1,13 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using NUnit.Framework;
 using Shouldly;
 using System;
 using System.Linq;
 using System.Xml.Linq;
 
 namespace Tests {
-	[TestClass]
+	[TestFixture]
 	public class Filters {
-		[TestMethod]
+		[Test]
 		public void TimeZone() {
 
 			var xdoc = XDocument.Parse(@"<?xml version=""1.0"" encoding=""utf-8"" ?>
@@ -29,7 +29,7 @@ namespace Tests {
 			});
 		}
 
-		[TestMethod]
+		[Test]
 		public void ParticipationStatus() {
 
 			var xdoc = XDocument.Parse(@"<?xml version=""1.0"" encoding=""utf-8"" ?>
@@ -63,7 +63,7 @@ namespace Tests {
 			});
 		}
 
-		[TestMethod]
+		[Test]
 		public void UID() {
 			var xdoc = XDocument.Parse(@"<?xml version=""1.0"" encoding=""utf-8"" ?>
 <C:calendar-query xmlns:C=""urn:ietf:params:xml:ns:caldav"">
@@ -90,7 +90,7 @@ namespace Tests {
 			});
 		}
 
-		[TestMethod]
+		[Test]
 		public void TimeRange() {
 			var xdoc = XDocument.Parse(@"<?xml version=""1.0"" encoding=""utf-8"" ?>
 <C:calendar-query xmlns:C=""urn:ietf:params:xml:ns:caldav"">

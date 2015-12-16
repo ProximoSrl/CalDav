@@ -3,11 +3,12 @@
   <metadata>
     <id>Jarvis.CalDav</id>
     <version>1.0.0</version>
-    <authors>Proximo S.r.L.</authors>
-    <owners>Proximo S.r.L.</owners>
+    <authors>SyncToday then forked by Proximo S.r.L.</authors>
+    <owners></owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <releaseNotes></releaseNotes>
-    <copyright>Copyright 2015 - Proximo S.r.L.</copyright>
+    <copyright></copyright>
+	<projectUrl>https://github.com/ProximoSrl/CalDav</projectUrl>
     <tags>Jarvis,Framework</tags>
 	 <description>A library for CalDav forked by the original project https://github.com/SyncToday/CalDav</description>
         <summary>This library was originally developed at https://github.com/SyncToday/CalDav then forked to extend it.
