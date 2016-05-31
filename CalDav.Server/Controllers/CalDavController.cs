@@ -246,24 +246,34 @@ namespace CalDav.Server.Controllers
         public static bool RequireAuthentication { get; set; }
         public static string BasicAuthenticationRealm { get; set; }
 
+        /// <summary>
+        /// Modified to support multiple calendars on iOS, each url is a single calendar, so each
+        /// url has a principal the very same requested url.
+        /// </summary>
+        /// <returns></returns>
         protected virtual string GetCurrentUserUrl()
         {
-            //if (string.IsNullOrEmpty(id))
-            //    return GetCalendarUrl(null);
-            ////id = User.Identity.Name;
-            //if (string.IsNullOrEmpty(id)) id = "ANONYMOUS";
-            var userUrl = "/" + USER_ROUTE.Replace("{id}", Thread.CurrentPrincipal.Identity.Name);
+            var segmentRequest = Request.Url.Segments.Where(s => s != "/" && s != "\\").Last(); 
+            //var userUrl = "/" + USER_ROUTE.Replace("{id}", Thread.CurrentPrincipal.Identity.Name);
+
+            var userUrl = "/" + USER_ROUTE.Replace("{id}", segmentRequest);
             return userUrl;
+            //return Request.Path;
         }
 
+        /// <summary>
+        /// Modified to support multiple calendars on iOS, each url is a single calendar, so each
+        /// url has a principal the very same requested url.
+        /// </summary>
         protected virtual string GetCurrentUserCalendar()
         {
-            //if (string.IsNullOrEmpty(id))
-            //    return GetCalendarUrl(null);
-            ////id = User.Identity.Name;
-            //if (string.IsNullOrEmpty(id)) id = "ANONYMOUS";
-            var calendarUserUrl = "/" + CALENDAR_ROUTE.Replace("{id}", Thread.CurrentPrincipal.Identity.Name);
+          
+            var segmentRequest = Request.Url.Segments.Where(s => s != "/" && s != "\\").Last();
+            //  var calendarUserUrl = "/" + CALENDAR_ROUTE.Replace("{id}", Thread.CurrentPrincipal.Identity.Name);
+
+            var calendarUserUrl = "/" + CALENDAR_ROUTE.Replace("{id}", segmentRequest);
             return calendarUserUrl;
+            //return Request.Path;
         }
 
         protected virtual string GetUserEmail(string id = null)
