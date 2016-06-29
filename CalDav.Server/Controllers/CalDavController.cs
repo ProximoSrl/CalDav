@@ -32,6 +32,8 @@ namespace CalDav.Server.Controllers
             
         }
 
+        public Boolean EnableCors { get; set; }
+
         #region Logging
 
         private String _currentXmlRequest;
@@ -66,6 +68,20 @@ namespace CalDav.Server.Controllers
         }
 
         #endregion Logging
+
+        #region Headers
+
+        protected override IAsyncResult BeginExecute(RequestContext requestContext, AsyncCallback callback, object state)
+        {
+            var result = base.BeginExecute(requestContext, callback, state);
+            Response.AddHeader("Access-Control-Allow-Origin", "*");
+            Response.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PROPFIND, PROPPATCH, REPORT, PUT, MOVE, DELETE, LOCK, UNLOCK");
+            Response.AddHeader("Access-Control-Allow-Headers", "User-Agent, Authorization, Content-type, Depth, If-match, If-None-Match, Lock-Token, Timeout, Destination, Overwrite, Prefer, X-client, X-Requested-With");
+            Response.AddHeader("Access-Control-Expose-Headers", "Etag, Preference-Applied");
+            return result;
+        }
+
+        #endregion
 
         public static void RegisterRoutes(
             RouteCollection routes, 
