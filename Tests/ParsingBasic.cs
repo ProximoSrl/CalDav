@@ -157,6 +157,20 @@ namespace Tests {
             Assert.IsFalse(serialized.Contains("EXDATE:20151013T140000Z"), "EXDATE should not end with Z");
         }
 
+        [Test]
+        public void Event_support_exdate_for_all_day_event()
+        {
+            var text = TestData.PutWithEXDATE_WithoutTIme;
+            var calendar = DeserializeCalendar(text);
+
+            var evt = (Event)calendar.Items.Single();
+            Assert.AreEqual(1, evt.ExDates.Count, "Count of Exdate wrong");
+            StringBuilder sb = new StringBuilder();
+            string serialized = SerializeCalendar(calendar, sb);
+            Console.WriteLine(serialized);
+            Assert.IsTrue(serialized.Contains("EXDATE;VALUE=DATE:20160713"), "EXTDATE should be in value DATE");
+        }
+
         private static string SerializeCalendar(Calendar calendar, StringBuilder sb)
         {
             using (var tw = new StringWriter(sb))

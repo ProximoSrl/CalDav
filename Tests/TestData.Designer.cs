@@ -146,5 +146,29 @@ namespace Tests {
                 return ResourceManager.GetString("PutWithEXDATE", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to BEGIN:VCALENDAR
+        ///PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN
+        ///VERSION:2.0
+        ///BEGIN:VEVENT
+        ///LAST-MODIFIED:20160629T093036Z
+        ///DTSTAMP:20160629T093036Z
+        ///UID:97d193e9-1434-4bb3-a1f1-9fd8eb4f4c49
+        ///SUMMARY:444
+        ///RRULE:FREQ=DAILY;UNTIL=20160714T220000Z
+        ///EXDATE;VALUE=DATE:20160713
+        ///DTSTART;VALUE=DATE:20160712
+        ///DTEND;VALUE=DATE:20160713
+        ///SEQUENCE:1
+        ///X-MOZ-GENERATION:1
+        ///END:VEVENT
+        ///END:VCALENDAR.
+        /// </summary>
+        internal static string PutWithEXDATE_WithoutTIme {
+            get {
+                return ResourceManager.GetString("PutWithEXDATE_WithoutTIme", resourceCulture);
+            }
+        }
     }
 }
