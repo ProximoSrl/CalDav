@@ -188,12 +188,28 @@ namespace CalDav {
                 {
                     wrtr.Property("RRULE", recurrence.ToString(), encoded : true);
                 }
-                
+
             if (ExDates.Any())
-                foreach (var exdate in ExDates)
+            {
+                if (!IsAllDayEvent)
                 {
-                    wrtr.Property("EXDATE", exdate);
+                    foreach (var exdate in ExDates)
+                    {
+                        wrtr.Property("EXDATE", exdate);
+                    }
                 }
+                else
+                {
+                    foreach (var exdate in ExDates)
+                    {
+                        //allday
+                        NameValueCollection extDateParam = new NameValueCollection();
+                        extDateParam.Add("VALUE", "DATE");
+                        wrtr.Property("EXDATE", exdate.ToString("yyyyMMdd"), parameters: extDateParam);
+                    }
+                }
+            }
+               
             wrtr.Property("TRANSP", Transparency);
 			wrtr.Property("URL", Url);
 			if (Properties != null)
