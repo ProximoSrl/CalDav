@@ -1,5 +1,4 @@
 ﻿using CalDav.Server.Models;
-using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,24 +13,10 @@ using System.Xml.Linq;
 //http://greenbytes.de/tech/webdav/draft-dusseault-caldav-05.html
 //http://wwcsd.net/principals/__uids__/wiki-ilovemysmartboard/
 
-
 namespace CalDav.Server.Controllers
 {
     public class CalDavController : Controller
     {
-
-        private static ILog _logger;
-
-        static CalDavController()
-        {
-            _logger = LogManager.GetLogger(typeof(CalDavController));
-        }
-
-        public CalDavController()
-        {
-            
-        }
-
         public Boolean EnableCors { get; set; }
 
         #region Logging
@@ -46,25 +31,25 @@ namespace CalDav.Server.Controllers
         protected override void OnActionExecuting(ActionExecutingContext filterContext)
         {
             base.OnActionExecuting(filterContext);
-            log4net.ThreadContext.Properties[_currentUrlThreadProperty] = Request.Url.AbsoluteUri;
-            log4net.ThreadContext.Properties[_currentUserAgent] = Request.UserAgent;
+            //log4net.ThreadContext.Properties[_currentUrlThreadProperty] = Request.Url.AbsoluteUri;
+            //log4net.ThreadContext.Properties[_currentUserAgent] = Request.UserAgent;
         }
 
         protected override void EndExecute(IAsyncResult asyncResult)
         {
             base.EndExecute(asyncResult);
 
-            _logger.DebugFormat("Request url {0} - Method {1}.\n\nRequest:\n{2}\n\nResponse:{3}",
-                Request.Url.AbsoluteUri, Request.HttpMethod, _currentXmlRequest, _currentXmlResponse);
+            //_logger.DebugFormat("Request url {0} - Method {1}.\n\nRequest:\n{2}\n\nResponse:{3}",
+            //    Request.Url.AbsoluteUri, Request.HttpMethod, _currentXmlRequest, _currentXmlResponse);
 
-            log4net.ThreadContext.Properties.Clear();
+            //log4net.ThreadContext.Properties.Clear();
         }
 
         protected override void OnException(ExceptionContext filterContext)
         {
             base.OnException(filterContext);
-            _logger.Error(string.Format("Error Executing request  url {0} - Method {1}.\n\nRequest:\n{2}\n\nResponse:{3}",
-                Request.Url.AbsoluteUri, Request.HttpMethod, _currentXmlRequest, _currentXmlResponse), filterContext.Exception);
+            //_logger.Error(string.Format("Error Executing request  url {0} - Method {1}.\n\nRequest:\n{2}\n\nResponse:{3}",
+            //    Request.Url.AbsoluteUri, Request.HttpMethod, _currentXmlRequest, _currentXmlResponse), filterContext.Exception);
         }
 
         #endregion Logging
@@ -231,13 +216,12 @@ namespace CalDav.Server.Controllers
                     case "GET": return Get(id, uid);
                     default:
                         var xdoc = GetRequestXml();
-                        return NotImplemented();
-                        
+                        return NotImplemented();                       
                 }
             }
             catch (SecurityException ex)
             {
-                _logger.Warn(string.Format("SecurityException Executing request url {0} - Method {1}.\n\nRequest:\n{2}\n\nResponse:{3}",
+                Serilog.Log.Warning(string.Format("SecurityException Executing request url {0} - Method {1}.\n\nRequest:\n{2}\n\nResponse:{3}",
                     Request.Url.AbsoluteUri, Request.HttpMethod, _currentXmlRequest, _currentXmlResponse), ex);
 
                 return Unauthorized();
